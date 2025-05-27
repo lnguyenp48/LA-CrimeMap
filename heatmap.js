@@ -2,6 +2,8 @@
  *  1. ChatGPT for guidance and syntax help: knowing to get a geojson file, how to load it, etc
  *  2. https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/
  *  3. https://d3-graph-gallery.com/graph/interactivity_tooltip.html#position
+ *  4. https://observablehq.com/@d3/zoom-to-bounding-box 
+ *  5. https://observablehq.com/@davidnmora/d3-zoom-gentle-introduction 
 **/
 
 // import rawData from main
@@ -39,28 +41,29 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
     const divisions = svg2.append("g")
         .selectAll("path")
         .data(geoData.features)
-        .enter()
-        .append("path")
-        .attr("d", d3.geoPath().projection(projection))
-        .attr("fill", "#8800ffaa")
-        .attr("stroke", "#333")
+        .join("path")
+            .attr("d", d3.geoPath().projection(projection))
+            .attr("fill", "#8800ffaa")
+            .attr("stroke", "#333")
 
-        .on("mouseover", function(event, d) {
-            const districtName = d.properties.APREC;
-            tooltip.style("display", "block")
-                .html(`<strong>${districtName}</strong>`);
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mouseout", function() {
-            tooltip.style("display", "none");
-        })
-        .on("click", clicked);
+            .on("mouseover", function(event, d) {
+                const districtName = d.properties.APREC;
+                tooltip.style("display", "block")
+                    .html(`<strong>${districtName}</strong>`);
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY + 10) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.style("display", "none");
+            })
+            .on("click", clicked);
 
     svg2.call(zoom);
     
+    // ZOOM FUNCTIONS :
+    // reset
     function reset() {
         divisions.transition().style("fill", null);
         svg2.transition().duration(750).call(
@@ -70,6 +73,7 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
         );
     }
 
+    // when you click on a division
     function clicked(event, d) {
         const [[x0, y0], [x1, y1]] = d3.geoPath().projection(projection).bounds(d);
         event.stopPropagation();
@@ -79,16 +83,16 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
             zoom.transform,
             d3.zoomIdentity
               .translate(900/2, 600/2)
-              .scale(Math.min(8, 0.9 / Math.max((x1-x0) / 900, (y1 - y0) / 600)))
-              .translate(-(x0 + x1) / 2, -(y0+y1) / 2),
+              .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / 900, (y1 - y0) / 600)))
+              .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
             d3.pointer(event, svg2.node())
         );
     }
 
+    // calling the transformations? idk how this works lowkey lol
     function zoomed(event) {
         const {transform} = event;
-        svg2.append("g").attr("transform", transform);
-        svg2.append("g").attr("stroke-width", 1 / transform.k);
+        divisions.attr("transform", transform);
     }
 
     }).catch(function(error) {
