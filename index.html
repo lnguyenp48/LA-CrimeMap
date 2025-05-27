@@ -6,14 +6,39 @@
 	<title>D3 Example</title>
 </head>
 <body style="width:100%;height:100%;margin: 0;">
-	<svg width="100%" height="100%">
+	<!-- adjust the width/height of barCharts; deleted the 100% because blocked heatmap -->
+	<div class="graphsContainer">
+		<svg id="barCharts"></svg>
+		<div class="mapContainer">
+			<svg id="heatmap"></svg>
+			<div id="mapTooltip"></div>
+		</div>
+	</div>
 
-	</svg>
-
-	<script src="https://d3js.org/d3.v5.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 	<script src="main.js"></script>
-	<script>
+	<script src="heatmap.js"></script>
 
-	</script>
+	<script></script>
 </body>
 </html>
+
+<style>
+	.graphsContainer{
+		display: flex; 
+		position: relative;
+	}
+	.mapContainer{
+		height: 100vh;
+	}
+	#mapTooltip{
+		position: absolute; 
+		display: none; 
+		background: white; 
+		border: 1px solid #333; 
+		padding: 5px; 
+		font-size: 12px; 
+		pointer-events: none;
+		z-index: 100;
+	}
+</style>

@@ -79,7 +79,7 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
     // TODO: data parsing (as needed)
 
     // create svg
-    const svg = d3.select("svg"); 
+    const svg = d3.select("#barCharts"); 
 
     // MAP PLOT:
 
