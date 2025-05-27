@@ -4,72 +4,23 @@
 	<meta charset="utf-8">
 	<meta name="description" content="">
 	<title>Los Angeles Crime Data Visualization</title>
-		<style>
-			#dashboard {
-			display: flex;
-			height: 100vh;
-			width: 100vw;
-			box-sizing: border-box;
-			padding: 30px;
-			}
-
-			#main {
-			display: flex;
-			flex: 1;
-			flex-direction: row;
-			}
-
-			#left {
-				display: flex;
-				flex-direction: column;
-				width: 80%;
-			}
-			
-			#right {
-				display: flex;
-				width: 20%;
-			}
-
-			#statistics {
-				display: flex;
-				width: 100%;
-				flex-direction: column;
-				border: 1px solid #ccc;
-				margin-left: 10px;
-			}
-
-			#map {
-				display: flex;
-				flex-direction: column;
-				height: 90%;
-				border: 1px solid #ccc;
-				margin-right: 10px;
-				margin-bottom: 10px;
-			}
-
-			#timeline {
-				display: flex;
-				flex-direction: column;
-				height: 10%;
-				border: 1px solid #ccc;
-				margin-right: 10px;
-				margin-top: 10px;
-			}
-		</style>
 </head>
 <body style="width:100%;height:100%;margin: 0;">
 	<div id="dashboard">
 		<div id="main">
 			<div id="left">
-				<div id="map"></div>
+				<div id="heatmap">
+					<div id="heatmaptooltip"></div>
+				</div>
 				<div id="timeline"></div>
 			</div>
 			<div id="right">
-				<div id="statistics"></div>
+				<div id="barcharts"></div>
 			</div>
 		</div>
 	</div>
 
+	<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 	<script src="https://d3js.org/d3.v7.min.js"></script>
 	<script src="main.js"></script>
 	<script src="heatmap.js"></script>
@@ -77,3 +28,63 @@
 	<script></script>
 </body>
 </html>
+
+	<style>
+		#dashboard {
+		display: flex;
+		height: 100vh;
+		width: 100vw;
+		box-sizing: border-box;
+		padding: 30px;
+		}
+
+		#main {
+		display: flex;
+		flex: 1;
+		flex-direction: row;
+		}
+
+		#left {
+			display: flex;
+			flex-direction: column;
+			width: 80%;
+			height: 100%;
+		}
+		
+		#right {
+			display: flex;
+			width: 20%;
+			height: 100%;
+		}
+
+		#barcharts {
+			display: flex;
+			width: 100%;
+			flex-direction: column;
+			border: 1px solid #ccc;
+			margin-left: 10px;
+		}
+
+		#heatmap {
+			display: flex;
+			flex-direction: column;
+			height: 90vh;
+			border: 1px solid #ccc;
+			margin-right: 10px;
+			margin-bottom: 10px;
+		}
+
+		#timeline {
+			display: flex;
+			flex-direction: column;
+			height: 10%;
+			border: 1px solid #ccc;
+			margin-right: 10px;
+			margin-top: 10px;
+		}
+
+		#heatmaptooltip {
+			display: flex;
+			position: absolute;
+		}
+	</style>

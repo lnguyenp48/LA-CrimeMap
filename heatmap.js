@@ -4,12 +4,10 @@
  *  3. https://d3-graph-gallery.com/graph/interactivity_tooltip.html#position
 **/
 
-const svg2 = d3.select("#heatmap");
-
-// responsive to browser resizing
-svg2.attr("viewBox", "0 0 900 800")
-   .attr("width", "100%")
-   .attr("height", "100%");
+const svg2 = d3.select("#heatmap")
+    .append("svg")
+    .attr("width", "100%")
+    .attr("height", "100%")
 
 // default projection
 const projection = d3.geoMercator()
@@ -17,8 +15,8 @@ const projection = d3.geoMercator()
 
 // load geoJSON data for LAPD districts
 d3.json("data/lapd_districts.geojson").then(geoData => {
-    projection.fitSize([900, 800], geoData); // Refit projection based on actual GeoJSON bounds
-    const tooltip = d3.select("#mapTooltip");
+    projection.fitSize([900, 600], geoData); // Refit projection based on actual GeoJSON bounds
+    const tooltip = d3.select("#heatmaptooltip");
     svg2.append("g")
         .selectAll("path")
         .data(geoData.features)
