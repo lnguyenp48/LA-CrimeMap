@@ -17,6 +17,8 @@ let barColumnMargin = {top: 0, right: 0, bottom: 0, left: 0},
 
 //Likely need more margins
 
+let exportedData = [];
+
 /*
  * MAIN PLOTS
  */
@@ -55,13 +57,16 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
         d.LON = Number(d.LON);
     })
 
-    console.log(rawData); //To verify that the code runs correctly up to this point
+    // console.log(rawData); //To verify that the code runs correctly up to this point
 
     const processedData = rawData.map(d=>{
+        
         return {
             //Colors
 
             //Map
+            "Area": d.AREA,
+            "Area_Name": d.AREA_NAME,
 
             //Timeline (? Unsure if it needs this)
 
@@ -73,10 +78,29 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
             //Alluvial Diagriam 
             };
         });
-    console.log("processedData", processedData); //To verify that the data was processed correctly via inspecting
+    // console.log("processedData", processedData); //To verify that the data was processed correctly via inspecting
     //Unsure if credit the HW3 that this was based on^
 
     // TODO: data parsing (as needed)
+
+    // counting up the amount of crime in each area
+    const areas = {};
+    processedData.forEach(d => {
+        if (d.Area_Name in areas) {
+            areas[d.Area_Name].count += 1;
+        } else {
+            const area = {
+                area: d.Area,
+                area_name: d.Area_Name,
+                count: 1
+            }
+            areas[d.Area_Name] = area;
+        }
+    })
+    const areaCrimeCounts = [];
+    Object.keys(areas).forEach(d => { areaCrimeCounts.push(areas[d]); });
+
+    exportedData = areaCrimeCounts; // IDK HOW ELSE TO SEND IT TO HEATMAP.JS 
 
     // create svg
     const svg = d3.select("#barCharts"); 
@@ -91,17 +115,17 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
     //Processing data and amount for Victim Age
     const victAgeCounts = processedData.reduce((s, { Vict_Age }) => (s[Vict_Age] = (s[Vict_Age] || 0) + 1, s), {});
     const victAgeData = Object.keys(victAgeCounts).map((key) => ({ Vict_Age: key, count: victAgeCounts[key] }));
-    console.log("victAgeData", victAgeData);
+    // console.log("victAgeData", victAgeData);
     //CHECK WHICH LOCATION IS THE ONE USED HERE [Likely Area]
 
-    barChartVicAge = svg.append("g")
+    const barChartVicAge = svg.append("g")
         .attr("width", barColumnWidth + barColumnMargin.left + barColumnMargin.right)
         .attr("height", barColumnHeight + barColumnMargin.top + barColumnHeight.bottom)
         .attr("transform", `translate(${barColumnMargin.left}, ${barColumnTop})`)
 
     
     //Bar Charts - Victim Sex
-    barChartVicSex = svg.append("g")
+    const barChartVicSex = svg.append("g")
         .attr("width", barColumnWidth + barColumnMargin.left + barColumnMargin.right)
         .attr("height", barColumnHeight + barColumnMargin.top + barColumnHeight.bottom)
         .attr("transform", `translate(${barColumnMargin.left}, ${barColumnTop})`)
@@ -118,3 +142,5 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
 });
 
 ///
+
+export {exportedData};
