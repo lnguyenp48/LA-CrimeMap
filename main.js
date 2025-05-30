@@ -69,6 +69,8 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
             "Area_Name": d.AREA_NAME,
 
             //Timeline (? Unsure if it needs this)
+            "Date_Rptd": d.Date_Rptd,
+            "DATE_OCC": d.DATE_OCC, //Check which time is used
 
             //Bar Charts
             "Vict_Age": d.Vict_Age,
@@ -110,13 +112,45 @@ d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
     // TIMELINE SCROLLING:
 
     // ADDITIONAL PLOTS:
+
+    //Function to get data based on year and location
+    //Doesn't work, but I think the idea of how it works is something along these lines
+    function organizeData (time, location) {
+        const object = {};
+        processedData.forEach(d => {
+            if (d.AREA_NAME == location && d.DATE_OCC == time) { //syntax likely not right for DATE_OCC, check how to only check certain parts of a string
+                if (d.Area_Name in object) {
+                    object[d.AREA_NAME].count += 1;
+                }
+                else {
+                    const object = {
+                        area: d.Area,
+                        area_name: d.Area_Name,
+                        Date_OCC: d.DATE_OCC,
+                        count: 1,
+    
+                        //Other Paramaters that will likely be organized by [more to be added]
+                        Vict_Age: d.Vict_Age,
+                        Vict_Sex: d.Vict_Sex 
+    
+                    }
+                }
+            }
+        })
+        return object;
+    }
+
     //Bar Charts - Victim Age
     //process data here, check which location is the one that should be used
     //Processing data and amount for Victim Age
+    var test = {};
+    test = organizeData("2022", "Northeast"); //"02/16/2022 12:00:00 AM"
+    console.log(test)
+
+
     const victAgeCounts = processedData.reduce((s, { Vict_Age }) => (s[Vict_Age] = (s[Vict_Age] || 0) + 1, s), {});
     const victAgeData = Object.keys(victAgeCounts).map((key) => ({ Vict_Age: key, count: victAgeCounts[key] }));
     // console.log("victAgeData", victAgeData);
-    //CHECK WHICH LOCATION IS THE ONE USED HERE [Likely Area]
 
     const barChartVicAge = svg.append("g")
         .attr("width", barColumnWidth + barColumnMargin.left + barColumnMargin.right)
