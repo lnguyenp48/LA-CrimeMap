@@ -27,19 +27,63 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
         .append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
-        .on("click", reset)
-
+        .on("click", reset);
+    
+    const g = svg2.append("g");
     // const colorscheme = d3.scaleQuantize([1,10], d3.schemeBlues[9]); // can change later probably
 
     projection.fitSize([900, 600], geoData); // Refit projection based on actual GeoJSON bounds
     const tooltip = d3.select("#heatmaptooltip");
+    const overviewSvg = d3.select("#overviewMap");
+    const overviewWidth = 200, overviewHeight = 150;
 
+    const overviewProjection = d3.geoMercator()
+        .fitSize([overviewWidth, overviewHeight], geoData);
+
+    const overviewPath = d3.geoPath().projection(overviewProjection);
+
+    const overviewG = overviewSvg.append("g");
+    overviewG.selectAll("path")
+        .data(geoData.features)
+        .join("path")
+        .attr("d", overviewPath)
+        .attr("fill", "#eee")
+        .attr("stroke", "#555");
+
+    const viewRect = overviewSvg.append("rect")
+        .attr("fill", "gray")
+        .attr("stroke", "red")
+        .attr("opacity", 0.3)
+        .attr("stroke-width", 1);
+    
     const zoom = d3.zoom()
         .scaleExtent([1, 8])
-        .on("zoom", zoomed);
+        .on("start", zoomStarted)
+        .on("zoom", zoomed)
+        // .on("end", zoomEnded);
 
-    const divisions = svg2.append("g")
-        .selectAll("path")
+    function zoomEnded(event) {
+        // Run if dragging (mousedown + mouseup)
+        if (event.sourceEvent && event.sourceEvent.type === "mouseup") {
+            // get mouse position
+            const [mx, my] = d3.pointer(event.sourceEvent, svg2.node());
+    
+            //find element under mouse
+            const element = document.elementFromPoint(event.sourceEvent.clientX, event.sourceEvent.clientY);
+            
+            //check if element under mouse is a district since the map disttricts are rendered as SVG <path> elements
+            if (element && element.tagName === "path") {
+                //wraps DOM element that is under moust in a d3 selection so can use D3 methods on it then datum gets the data object boung to that DOM
+                const d = d3.select(element).datum();
+                    tooltip.style("display", "block")
+                        .html(`<strong>${d.properties.APREC}</strong>`)
+                        .style("left", (event.sourceEvent.pageX + 10) + "px")
+                        .style("top", (event.sourceEvent.pageY + 10) + "px");  
+            }
+        }
+    }
+
+    const divisions = g.selectAll("path")
         .data(geoData.features)
         .join("path")
             .attr("d", d3.geoPath().projection(projection))
@@ -91,10 +135,38 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
 
     // calling the transformations? idk how this works lowkey lol
     function zoomed(event) {
-        const {transform} = event;
-        divisions.attr("transform", transform);
+        const transform = event.transform;
+        g.attr("transform", transform);
+    
+        // Get the corners of the visible area in screen space
+        const topLeftScreen = [0, 0];
+        const bottomRightScreen = [900, 600];
+    
+        // Invert the transform to get those points in geographic coordinates
+        const topLeftGeo = projection.invert(transform.invert(topLeftScreen));
+        const bottomRightGeo = projection.invert(transform.invert(bottomRightScreen));
+    
+        // Project those geographic coordinates into the overview projection
+        const [x0, y0] = overviewProjection(topLeftGeo);
+        const [x1, y1] = overviewProjection(bottomRightGeo);
+    
+        viewRect
+            .attr("x", Math.min(x0, x1))
+            .attr("y", Math.min(y0, y1))
+            .attr("width", Math.abs(x1 - x0))
+            .attr("height", Math.abs(y1 - y0));
     }
 
+    function zoomStarted(event) {
+    if (event.sourceEvent && event.sourceEvent.type === "mousedown") {
+            tooltip.style("display", "none");
+        }
+    }  
+    
+    function isMouseDown(event){
+        event.sourceEvent.type === "mousedown" 
+    }
+    
     }).catch(function(error) {
     console.log(error);
 });
