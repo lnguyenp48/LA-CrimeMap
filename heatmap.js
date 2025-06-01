@@ -52,7 +52,6 @@ d3.json("data/lapd_districts.geojson").then(geoData => {
 
     const viewRect = overviewSvg.append("rect")
         .attr("fill", "gray")
-        .attr("stroke", "red")
         .attr("opacity", 0.3)
         .attr("stroke-width", 1);
     
