@@ -6,16 +6,6 @@
  *  5. https://observablehq.com/@davidnmora/d3-zoom-gentle-introduction 
 **/
 
-// import rawData from main
-// import { exportedData } from "./main.js";
-
-const areaCrimeRate = new Map();
-
-// this is broken rn sorry omg ;-;
-await import('./main.js').then(moduleA => {
-    console.log(moduleA.exportedData);
-});
-
 // default projection
 const projection = d3.geoMercator()
     .fitSize([900, 800], { type: "FeatureCollection", features: [] }); 
