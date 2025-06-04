@@ -30,6 +30,13 @@ export async function loadCrimeData() {
     }
 }
 
+export function countCrimes(){
+    let districts = [];
+    d3.csv("Crime_Data_from_2020_to_Present.csv").then(rawData => {
+        
+    });
+}
+
 // export async function loadCrimeData() {
 //     // boundaries and margin setup
 // const width = window.innerWidth;

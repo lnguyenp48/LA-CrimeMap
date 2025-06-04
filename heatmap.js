@@ -25,7 +25,7 @@ export async function initMap(crimeData) {
             .fitSize([900, 800], geoData);
 
         const overviewProjection = d3.geoMercator()
-            .fitSize([200, 150], geoData);
+            .fitSize([200, 180], geoData);
         
         // Hide overflow of hexagons outside the map boundaries
         svg2.append("clipPath")
@@ -49,17 +49,16 @@ export async function initMap(crimeData) {
         // highlighted area user is viewing
         const viewRect = overviewSvg.append("rect")
             .attr("class", "view-rect")
-            .attr("fill", "#bcd8e3")
-            .attr("opacity", 0.5)
-            .attr("stroke", "#d67a7a")
-            .attr("stroke-width", 1.3);
+            .attr("fill", "none")
+            // .attr("opacity", 0.5)
+            .attr("stroke", "#89c6e0")
+            .attr("stroke-width", 2.5);
 
         // Set up zoom behavior
         const zoom = d3.zoom()
             .scaleExtent([1, 8])
             .on("start", zoomStarted)
             .on("zoom", (event) => {
-                console.log("Zoom event fired:", event.transform); 
                 zoomed(event); 
             });
 
@@ -199,9 +198,26 @@ function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
 
 function setupTooltip(divisions, tooltip) {
     divisions
+        .style("cursor", "pointer")
         .on("mouseover", function(event, d) {
-            tooltip.style("display", "block")
-                .html(`<strong>${d.properties.APREC}</strong>`);
+            
+            tooltip
+                .style("display", "block")
+                .style("background-color", "rgba(255, 255, 255, 0.9)")
+                .style("border", "1px solid black")
+                .style("border-radius", "7px")
+                .style("padding", "5px")
+                .style("color", "#403f3e")
+                .style("font-family", "sans-serif")
+                .style("font-size", "12px")
+                .html(`
+                    <div>
+                        <strong>${d.properties.APREC}</strong>
+                        <p>Total Number of Crimes: *placeholder*</p>
+                    </div>
+                `);
+                
+                
         })
         .on("mousemove", function(event) {
             tooltip.style("left", (event.pageX + 10) + "px")
@@ -271,3 +287,4 @@ function drawLegend() {
         .style("font-size", "12px")
         .style("font-weight", "bold");
 }
+
