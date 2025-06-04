@@ -11,14 +11,19 @@
 			<div id="left">
 					<div id="heatmaptooltip"></div>
 					<svg id="heatmap"></svg>
-				<div id="overviewMapContainer" style="position:absolute; top:40px; left:40px; border:2px solid #747474; background: white;">
+				<div id="overviewMapContainer" style="position:absolute; top:60px; left:60px; border:1px solid #747474; background: white;">
 					<svg id="overviewMap" width="200" height="150"></svg>
 				  </div>
+				<div id="legendContainer">
+					<svg id="legend" width="300" height="50"></svg>
+				</div>
+
 				<div id="timeline"></div>
 			</div>
 			<div id="right">
 				<div id="barcharts"></div>
 			</div>
+			<button>Start</button>
 		</div>
 	</div>
 
@@ -41,7 +46,19 @@
 		box-sizing: border-box;
 		padding: 30px;
 		}
-
+		button{
+			position: absolute;
+			top: 10px;
+			right: 150px;
+		}
+		#legendContainer{
+			position: absolute;
+			padding: 10px 5px;
+			border: 1px solid #747474;
+			bottom: 150px;
+			left: 60px;
+			background: white;
+		}
 		#main {
 		display: flex;
 		flex: 1;

@@ -26,8 +26,9 @@ export async function initMap(crimeData) {
 
         const overviewProjection = d3.geoMercator()
             .fitSize([200, 150], geoData);
-
-            svg2.append("clipPath")
+        
+        // Hide overflow of hexagons outside the map boundaries
+        svg2.append("clipPath")
             .attr("id", "map-clip")
             .append("path")
             .attr("d", d3.geoPath().projection(projection)(geoData));
@@ -36,19 +37,22 @@ export async function initMap(crimeData) {
         const overviewSvg = d3.select("#overviewMap");
         const overviewPath = d3.geoPath().projection(overviewProjection);
         
+        // boundaries within overview map
         overviewSvg.selectAll("path")
             .data(geoData.features)
             .join("path")
             .attr("d", overviewPath)
-            .attr("fill", "#eee")
-            .attr("stroke", "#555");
-            
+            .attr("fill", "#fffafe")
+            .attr("stroke", "#555")
+            .attr("stroke-width", 0.7);
+        
+        // highlighted area user is viewing
         const viewRect = overviewSvg.append("rect")
             .attr("class", "view-rect")
-            .attr("fill", "none")
-            .attr("fill", "gray")
-            .attr("opacity", 0.3)
-            .attr("stroke-width", 1.5);
+            .attr("fill", "#bcd8e3")
+            .attr("opacity", 0.5)
+            .attr("stroke", "#d67a7a")
+            .attr("stroke-width", 1.3);
 
         // Set up zoom behavior
         const zoom = d3.zoom()
@@ -60,11 +64,12 @@ export async function initMap(crimeData) {
             });
 
         svg2.call(zoom);
-
+        let currentData = crimeData;
        
         // Add crime data and boundaries
         if (crimeData && crimeData.length > 0) {
             addCrimeHeatmap(g, crimeData, projection);
+            drawLegend();
         }
         const divisions = drawBoundaries(g, geoData, projection, clicked);
 
@@ -81,20 +86,33 @@ export async function initMap(crimeData) {
                     d3.zoomIdentity,
                     d3.zoomTransform(svg2.node()).invert([900/2, 600/2])
                 );
+            g.selectAll(".hexbin-layer").remove();
+            g.selectAll(".district-boundary").remove();
+
+            addCrimeHeatmap(g, currentData, projection, 8);
+            const resetDivisions = drawBoundaries(g, geoData, projection, clicked);
+            
+            setupTooltip(resetDivisions, tooltip);
         }
         function clicked(event, d) { 
             const [[x0, y0], [x1, y1]] = d3.geoPath().projection(projection).bounds(d);
-                event.stopPropagation();
-                divisions.transition().style("fill", null);
-                // d3.select(this).transition().style("fill", "red");
-                svg2.transition().duration(750).call(
-                    zoom.transform,
-                    d3.zoomIdentity
-                    .translate(900/2, 600/2)
-                    .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / 900, (y1 - y0) / 600)))
-                    .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
-                    d3.pointer(event, svg2.node())
-                );
+            event.stopPropagation();
+            divisions.transition().style("fill", null);
+            svg2.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+                .translate(900/2, 600/2)
+                .scale(Math.min(8, 0.9 / Math.max((x1 - x0) / 900, (y1 - y0) / 600)))
+                .translate(-(x0 + x1) / 2, -(y0 + y1) / 2),
+                d3.pointer(event, svg2.node())
+            );
+            g.selectAll(".hexbin-layer").remove();
+            g.selectAll(".district-boundary").remove();
+
+            addCrimeHeatmap(g, currentData, projection, 3);
+            const zoomedDivisions = drawBoundaries(g, geoData, projection, clicked);
+            setupTooltip(zoomedDivisions, tooltip);
+            
         }
         function zoomed(event) { 
             const transform = event.transform;
@@ -128,17 +146,20 @@ export async function initMap(crimeData) {
         }
 
         return {
-            updateData: (newData) => {
+            updateData: (newData, radius = 8) => {
+                currentData = newData;
+
                 // Update crime visualization when data changes
                 g.selectAll(".hexbin-layer").remove();
                 g.selectAll(".district-boundary").remove();
-
-                addCrimeHeatmap(g, newData, projection);
+                
+                addCrimeHeatmap(g, newData, projection, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
                 setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"));
+                
             }
+            
         };
-
     } catch (error) {
         console.error("Error initializing map:", error);
         throw error;
@@ -146,20 +167,20 @@ export async function initMap(crimeData) {
 }
 
 // Helper functions
-function addCrimeHeatmap(container, crimeData, projection) {
+function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
     const hexPoints = crimeData.map(d => {
         const coords = projection([+d.longitude, +d.latitude]);
         return coords && !isNaN(coords[0]) && !isNaN(coords[1]) ? coords : null;
     }).filter(Boolean);
 
     const hexbin = d3.hexbin()
-        .radius(8)
+        .radius(radius)
         .extent([[0, 0], [900, 800]]);
 
     const bins = hexbin(hexPoints);
 
     const hexColor = d3.scaleThreshold()
-        .domain([1, 10, 25, 50, 100, 500, 1000, 2000])
+        .domain([1, 10, 25, 50, 100, 250, 500, 1000, 2000])
         .range(d3.schemeReds[9]);
 
     container.append("g")
@@ -172,7 +193,8 @@ function addCrimeHeatmap(container, crimeData, projection) {
         .attr("transform", d => `translate(${d.x},${d.y})`)
         .attr("fill", d => hexColor(d.length))
         .attr("stroke", "none")
-        .attr("opacity", 0.7);
+        .attr("opacity", 0.7)
+        .style("pointer-events", "none");
 }
 
 function setupTooltip(divisions, tooltip) {
@@ -189,6 +211,7 @@ function setupTooltip(divisions, tooltip) {
             tooltip.style("display", "none");
         });
 }
+
 function drawBoundaries(container, geoData, projection, clicked) {
     const boundaryGroup = container.append("g")
         .attr("class", "district-boundary");
@@ -197,10 +220,54 @@ function drawBoundaries(container, geoData, projection, clicked) {
         .data(geoData.features)
         .join("path")
         .attr("d", d3.geoPath().projection(projection))
-        .attr("fill", "none")
-        .attr("stroke", "#333")
-        .attr("stroke-width", 1.5)
+        .attr("fill", "rgba(0,0,0,0.01)") //make it almost transparent because svg paths without fill aren't interactive by default 
+        .attr("stroke", "#403f3e")
+        .attr("stroke-width", 0.7)
         .on("click", clicked);
 
     return divisions;
+}
+
+function drawLegend() {
+    const legendWidth = 300;
+    const legendHeight = 50;
+
+    const thresholds = [1, 10, 25, 50, 100,250, 500, 1000, 2000];
+    const colors = d3.schemeReds[9];
+
+    const svg = d3.select("#legend")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight);
+
+    const legendGroup = svg.append("g")
+        .attr("transform", "translate(30, 20)");
+
+    // Draw color boxes
+    legendGroup.selectAll("rect")
+        .data(colors)
+        .join("rect")
+        .attr("x", (d, i) => i * ((legendWidth - 60) / colors.length))
+        .attr("y", 0)
+        .attr("width", (legendWidth - 60) / colors.length)
+        .attr("height", 10)
+        .attr("fill", d => d);
+
+    // Draw labels under each threshold
+    legendGroup.selectAll("text")
+        .data(thresholds)
+        .join("text")
+        .attr("x", (d, i) => i * ((legendWidth - 60) / colors.length))
+        .attr("y", 25)
+        .text(d => d)
+        .style("font-size", "10px")
+        .attr("text-anchor", "middle");
+
+    // Add a title
+    svg.append("text")
+        .attr("x", legendWidth / 2)
+        .attr("y", 10)
+        .attr("text-anchor", "middle")
+        .text("Crime Count")
+        .style("font-size", "12px")
+        .style("font-weight", "bold");
 }
