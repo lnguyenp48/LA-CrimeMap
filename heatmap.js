@@ -13,7 +13,6 @@ export async function initMap(crimeData, countCrimes) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
             d3.json("data/lapd_districts.geojson"),
-            countCrimes()
         ]);
         console.log("Crime Data From Heat", crimeData);
 

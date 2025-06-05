@@ -55,6 +55,8 @@ export async function filterCrimesByType(type) {
 
         }
     });
+}
+
 export async function countCrimes(){
     try {
         const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
@@ -280,4 +282,3 @@ export async function countCrimes(){
 // // ///
 
 // // }
-
