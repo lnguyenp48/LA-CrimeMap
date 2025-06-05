@@ -5,12 +5,15 @@
  *  4. https://observablehq.com/@d3/zoom-to-bounding-box 
  *  5. https://observablehq.com/@davidnmora/d3-zoom-gentle-introduction 
 **/
+import { countCrimes } from './main.js';
 
 export async function initMap(crimeData) {
     try {
-        const [geoData] = await Promise.all([
-            d3.json("data/lapd_districts.geojson")
+        const [geoData, districtCrimeCounts] = await Promise.all([
+            d3.json("data/lapd_districts.geojson"),
+            countCrimes()
         ]);
+        console.log("Crime Data From Heat", crimeData);
 
         // Create SVG container
         const svg2 = d3.select("#heatmap")
@@ -22,8 +25,10 @@ export async function initMap(crimeData) {
 
         // Set up projections
         const projection = d3.geoMercator()
-            .fitSize([900, 800], geoData);
-
+            .fitSize([850, 800], geoData);
+        
+        const [x, y] = projection.translate();
+        projection.translate([x + 100, y]);
 
         const overviewProjection = d3.geoMercator()
             .fitSize([200, 180], geoData);
@@ -76,7 +81,7 @@ export async function initMap(crimeData) {
 
         // Tooltip setup
         const tooltip = d3.select("#heatmaptooltip");
-        setupTooltip(divisions, tooltip);
+        setupTooltip(divisions, tooltip, districtCrimeCounts);
 
         // Zoom/click handlers 
         function reset() { 
@@ -92,7 +97,7 @@ export async function initMap(crimeData) {
             addCrimeHeatmap(g, currentData, projection, 8);
             const resetDivisions = drawBoundaries(g, geoData, projection, clicked);
             
-            setupTooltip(resetDivisions, tooltip);
+            setupTooltip(resetDivisions, tooltip, districtCrimeCounts);
         }
         function clicked(event, d) { 
             const [[x0, y0], [x1, y1]] = d3.geoPath().projection(projection).bounds(d);
@@ -111,7 +116,7 @@ export async function initMap(crimeData) {
 
             addCrimeHeatmap(g, currentData, projection, 3);
             const zoomedDivisions = drawBoundaries(g, geoData, projection, clicked);
-            setupTooltip(zoomedDivisions, tooltip);
+            setupTooltip(zoomedDivisions, tooltip, districtCrimeCounts);
             
         }
         function zoomed(event) { 
@@ -155,7 +160,7 @@ export async function initMap(crimeData) {
                 
                 addCrimeHeatmap(g, newData, projection, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
-                setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"));
+                setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"), districtCrimeCounts);
                 
             }
             
@@ -169,13 +174,15 @@ export async function initMap(crimeData) {
 // Helper functions
 function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
     const hexPoints = crimeData.map(d => {
+        // console.log("Coords:", d.longitude, d.latitude);
+
         const coords = projection([+d.longitude, +d.latitude]);
         return coords && !isNaN(coords[0]) && !isNaN(coords[1]) ? coords : null;
     }).filter(Boolean);
 
     const hexbin = d3.hexbin()
         .radius(radius)
-        .extent([[0, 0], [900, 800]]);
+        .extent([[0, 0], [950, 800]]);
 
     const bins = hexbin(hexPoints);
 
@@ -197,11 +204,13 @@ function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
         .style("pointer-events", "none");
 }
 
-function setupTooltip(divisions, tooltip) {
+function setupTooltip(divisions, tooltip, districtCrimeCounts) {
     divisions
         .style("cursor", "pointer")
         .on("mouseover", function(event, d) {
-            
+            const name = d.properties.APREC;
+            const total = districtCrimeCounts[name].count;
+
             tooltip
                 .style("display", "block")
                 .style("background-color", "rgba(255, 255, 255, 0.9)")
@@ -213,8 +222,8 @@ function setupTooltip(divisions, tooltip) {
                 .style("font-size", "12px")
                 .html(`
                     <div>
-                        <strong>${d.properties.APREC}</strong>
-                        <p>Total Number of Crimes: *placeholder*</p>
+                        <strong>${name}</strong>
+                        <p>Total Number of Crimes: ${total}</p>
                     </div>
                 `);
                 
@@ -284,6 +293,7 @@ function drawLegend() {
         .attr("x", legendWidth / 2)
         .attr("y", 10)
         .attr("text-anchor", "middle")
+        .style("font-family", "sans-serif")
         .text("Crime Count")
         .style("font-size", "12px")
         .style("font-weight", "bold");
