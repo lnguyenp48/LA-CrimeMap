@@ -9,24 +9,31 @@
 	<div id="dashboard">
 		<div id="main">
 			<div id="left">
-				<div id="heatmap">
 					<div id="heatmaptooltip"></div>
-				</div>
-				<div id="overviewMapContainer" style="position:absolute; top:40px; left:40px; border:2px solid #747474; background: white;">
-					<svg id="overviewMap" width="200" height="150"></svg>
+					<svg id="heatmap"></svg>
+				<div id="overviewMapContainer" style="position:absolute;  border:1px solid #747474; background: white;">
+					<svg id="overviewMap" width="200" height="180"></svg>
 				  </div>
+				<div id="legendContainer">
+					<svg id="legend" width="300" height="50"></svg>
+				</div>
+
 				<div id="timeline"></div>
 			</div>
 			<div id="right">
 				<div id="barcharts"></div>
 			</div>
+			<button>Start</button>
 		</div>
 	</div>
 
 	<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
-	<script src="https://d3js.org/d3.v7.min.js"></script>
-	<script type="module" src="main.js"></script>
-	<!-- <script defer type="module" src="heatmap.js"></script> -->
+	<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+	<!-- <script src="https://d3js.org/d3.v7.min.js"></script> -->
+	<!-- <script type="module" src="main.js"></script>
+	<script defer type="module" src="heatmap.js"></script> -->
+	<script type="module" src="index.js"></script>
+
 
 	<script></script>
 </body>
@@ -40,7 +47,19 @@
 		box-sizing: border-box;
 		padding: 30px;
 		}
-
+		button{
+			position: absolute;
+			top: 10px;
+			right: 150px;
+		}
+		#legendContainer{
+			position: absolute;
+			padding: 10px 5px;
+			border: 1px solid #747474;
+			bottom: 150px;
+			left: 60px;
+			background: white;
+		}
 		#main {
 		display: flex;
 		flex: 1;
@@ -75,7 +94,13 @@
 			border: 1px solid #ccc;
 			margin-right: 10px;
 			margin-bottom: 10px;
+			overflow: hidden;
 		}
+
+		.hexagon {
+			stroke: #000;
+			stroke-opacity: 0.1;
+		  }
 
 		#timeline {
 			display: flex;
