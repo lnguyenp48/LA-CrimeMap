@@ -1,3 +1,4 @@
+//This function completes general processing of dataset 
 export async function loadCrimeData(dataset) {
     try {
         if(!dataset){
@@ -31,11 +32,32 @@ export async function loadCrimeData(dataset) {
     }
 }
 
-export async function filterCrimesByType(type) {
+function getMonthYear(dateInput) {
+    const parseDate = d3.timeParse("%m/%d/%Y %I:%M:%S %p");
+    const date = parseDate(dateInput);
+    return {
+        month: date.getMonth() + 1, // 1-based month (1 = Jan)
+        year: date.getFullYear()
+    };
+}
+// This function filters the original crime dataset based on the type of crime committed
+// type: keyword used to filter data that matches this type
+// returns data array with all incidents matching the type of crime user wants to filter for 
+export async function filterCrimesByType(type, startDate, endDate) {
     const data = await d3.csv("Crime_Data_from_2020_to_Present.csv");
     const sexCrimes = ["beastiality", "indecent exposure", "lewd", "pimping", "peeping tom"];
+    
+    const { month: start_month, year: start_year } = getMonthYear(startDate);
+    const { month: end_month, year: end_year } = getMonthYear(endDate);
 
     return data.filter(d => {
+        const { month, year } = getMonthYear(d["DATE OCC"]);
+        // outside year range = automatically no
+        if(year > end_year || year < start_year) return false;
+        
+        if (year === start_year && month < start_month) return false;
+        if (year === end_year && month > end_month) return false;
+        
         const desc = d["Crm Cd Desc"]?.toLowerCase() || "";
         switch (type) {
             case "battery_assault":
