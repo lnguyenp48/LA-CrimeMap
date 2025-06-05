@@ -9,12 +9,12 @@
 import { countCrimes } from './main.js';
 
 
-export async function initMap(crimeData, countCrimes) {
+export async function initMap(crimeData, fullData, countCrimes) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
             d3.json("data/lapd_districts.geojson"),
         ]);
-        console.log("Crime Data From Heat", crimeData);
+        console.log("Crime Data From Heat", fullData);
 
         // Create SVG container
         const svg2 = d3.select("#heatmap")
@@ -70,35 +70,37 @@ export async function initMap(crimeData, countCrimes) {
                 zoomed(event); 
             });
 
-        // nodes for each division
-        const circles = g.selectAll("circles")
-            .data(geoData.features)
-            .enter().append('circle')
-                .attr('transform', function(d) {
-                    return 'translate(' + d3.geoPath().projection(projection).centroid(d) + ')';
+        // draw nodes for each division
+        function drawCircles(){
+            const circles = g.selectAll("circles")
+                .data(geoData.features)
+                .enter().append('circle')
+                    .attr('transform', function(d) {
+                        return 'translate(' + d3.geoPath().projection(projection).centroid(d) + ')';
+                    })
+                    .attr('r', 7)
+                    .attr('stroke-width', 0.7)
+                    .attr('stroke', 'black')
+                    .attr('fill', "rgb(214, 174, 255)")
+                    .attr("opacity", 1)
+                // .on("click", clicked) // adjust to update crime area + counts of bar charts
+                .on("mouseover", function(d) {
+                    d3.select(this)
+                        .transition().duration(300)
+                        .attr("r", 10)
+                        .style("stroke", "lightgrey")
+                        .style("stroke-width", 3)
+                        .style("fill", "rgb(240, 226, 255)")
+                    })
+                .on("mouseleave", function(d) {
+                    d3.select(this)
+                        .transition().duration(300)
+                        .attr("r", 7)
+                        .style("stroke", "black")
+                        .style("stroke-width", 0.7)
+                        .style("fill", "rgb(214, 174, 255)")
                 })
-                .attr('r', 7)
-                .attr('stroke-width', 0.7)
-                .attr('stroke', 'black')
-                .attr('fill', "rgb(214, 174, 255)")
-                .attr("opacity", 1)
-            .on("click", clicked) // adjust to update crime area + counts of bar charts
-            .on("mouseover", function(d) {
-                d3.select(this)
-                    .transition().duration(300)
-                    .attr("r", 10)
-                    .style("stroke", "lightgrey")
-                    .style("stroke-width", 3)
-                    .style("fill", "rgb(240, 226, 255)")
-                })
-            .on("mouseleave", function(d) {
-                d3.select(this)
-                    .transition().duration(300)
-                    .attr("r", 7)
-                    .style("stroke", "black")
-                    .style("stroke-width", 0.7)
-                    .style("fill", "rgb(214, 174, 255)")
-            })
+        }
 
 
         svg2.call(zoom);
@@ -106,7 +108,7 @@ export async function initMap(crimeData, countCrimes) {
        
         // Add crime data and boundaries
         if (crimeData && crimeData.length > 0) {
-            addCrimeHeatmap(g, crimeData, projection, drawTimeline);
+            addCrimeHeatmap(g, crimeData, fullData, projection, drawTimeline, drawCircles);
             drawLegend();
             // drawTimeline(crimeData);
         }
@@ -127,7 +129,7 @@ export async function initMap(crimeData, countCrimes) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, projection, drawTimeline, 8);
+            addCrimeHeatmap(g, currentData, fullData, projection, drawTimeline, drawCircles, 8);
             const resetDivisions = drawBoundaries(g, geoData, projection, clicked);
             
             setupTooltip(resetDivisions, tooltip, districtCrimeCounts);
@@ -147,7 +149,7 @@ export async function initMap(crimeData, countCrimes) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, projection, drawTimeline, 3);
+            addCrimeHeatmap(g, currentData, fullData, projection, drawTimeline, drawCircles, 3);
             const zoomedDivisions = drawBoundaries(g, geoData, projection, clicked);
             setupTooltip(zoomedDivisions, tooltip, districtCrimeCounts);
             
@@ -199,7 +201,7 @@ export async function initMap(crimeData, countCrimes) {
                 g.selectAll(".hexbin-layer").remove();
                 g.selectAll(".district-boundary").remove();
                 
-                addCrimeHeatmap(g, newData, projection, drawTimeline, radius);
+                addCrimeHeatmap(g, newData, fullData, projection, drawTimeline, drawCircles, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
                 setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"), districtCrimeCounts);
          
@@ -213,7 +215,7 @@ export async function initMap(crimeData, countCrimes) {
 }
 
 // Helper functions
-function addCrimeHeatmap(container, crimeData, projection, drawTimeline, radius = 8) {
+function addCrimeHeatmap(container, crimeData, fullData, projection, drawTimeline, drawCircles, radius = 8) {
     const hexPoints = crimeData.map(d => {
         // console.log("Coords:", d.longitude, d.latitude);
 
@@ -231,7 +233,8 @@ function addCrimeHeatmap(container, crimeData, projection, drawTimeline, radius 
         .domain([1, 10, 25, 50, 100, 250, 500, 1000, 2000])
         .range(d3.schemeReds[9]);
     
-    drawTimeline(crimeData);
+    drawTimeline(fullData);
+    
     container.append("g")
         .attr("class", "hexbin-layer")
         .attr("clip-path", "url(#map-clip)")
@@ -244,8 +247,9 @@ function addCrimeHeatmap(container, crimeData, projection, drawTimeline, radius 
         .attr("stroke", "none")
         .attr("opacity", 0.7)
         .style("pointer-events", "none");
+    
+    drawCircles(); //draw circles AFTER rendering map
 
-   
 }
 
 function setupTooltip(divisions, tooltip, districtCrimeCounts) {
@@ -359,7 +363,7 @@ function drawTimeline(crimeData) {
     // Parse DATE_OCC into readable dates
     const parseDate = d3.timeParse("%m/%d/%Y %I:%M:%S %p");
     crimeData.forEach(d => {
-        d.parsedDateOcc = parseDate(d.DATE_OCC);
+        d.parsedDateOcc = parseDate(d["DATE OCC"]);
     });
 
     crimeData.sort((a, b) => d3.ascending(a.parsedDateOcc, b.parsedDateOcc));
@@ -451,3 +455,13 @@ function drawTimeline(crimeData) {
         console.log("Brushed:", brushSelection);
     }
 }
+
+// return the start and end dates of range selected by user on timeline
+// return as a string in this format: "01/01/2022 12:00:00 AM" preferably as that is what the filter function in main.js is expecting
+// if returned in another format, please update the filter function in main.js too, ty
+// export function getStartDate(){
+//     return;
+// }
+// export function getEndDate(){
+
+// }
