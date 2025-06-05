@@ -10,6 +10,7 @@
 		<div id="main">
 			<div id="left">
 					<div id="heatmaptooltip"></div>
+					<div id="loading">Loading map, please wait...</div>
 					<svg id="heatmap"></svg>
 				<div id="overviewMapContainer" style="position:absolute;  border:1px solid #747474; background: white;">
 					<svg id="overviewMap" width="200" height="180"></svg>
@@ -17,13 +18,22 @@
 				<div id="legendContainer">
 					<svg id="legend" width="300" height="50"></svg>
 				</div>
-
+				<div id="filter">
+					<label for="filterSelect">Filter Crime Type:</label>
+					<select id="filterSelect">
+						<option value="all">All</option>
+						<option value="battery_assault">Battery and assault</option>
+						<option value="minors">Involving minors</option>
+						<option value="burglary_theft">Burglary and theft</option>
+						<option value="sexual">Rape and Sexual Offenses</option>
+					</select>
+				</div>
 				<div id="timeline"></div>
 			</div>
 			<div id="right">
 				<div id="barcharts"></div>
 			</div>
-			<button>Start</button>
+			<!-- <button>Start</button> -->
 		</div>
 	</div>
 
@@ -41,11 +51,32 @@
 
 	<style>
 		#dashboard {
-		display: flex;
-		height: 100vh;
-		width: 100vw;
-		box-sizing: border-box;
-		padding: 30px;
+			display: flex;
+			height: 100vh;
+			width: 100vw;
+			box-sizing: border-box;
+			padding: 30px;
+		}
+		#loading{
+			position: absolute;
+			top: 35vh;
+			left: 28vw;
+			background-color: rgba(255, 255, 255, 0.9);
+			padding: 15px;
+			border-radius: 10px;
+			border: 1px solid #2b3f5e;
+			color: #2b3f5e;
+			font-family: sans-serif;
+		}
+		#filter{
+			font-family: sans-serif;
+			padding: 15px;
+			background-color: rgba(255, 255, 255, 0.9);
+			font-size: 14px;
+			position: absolute;
+			top: 30px;
+			right: 32vw;
+			border: 1px solid #2b3f5e;
 		}
 		button{
 			position: absolute;
@@ -69,13 +100,15 @@
 		#left {
 			display: flex;
 			flex-direction: column;
-			width: 80%;
+			width: 70%;
 			height: 100%;
+			margin-right: 10px;
+
 		}
 		
 		#right {
 			display: flex;
-			width: 20%;
+			width: 30%;
 			height: 100%;
 		}
 

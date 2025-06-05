@@ -1,10 +1,10 @@
-export async function loadCrimeData() {
+export async function loadCrimeData(dataset) {
     try {
-        const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
-
-        
+        if(!dataset){
+            return [];
+        }
         // Process raw data
-        const processedData = rawData.map(d => ({
+        const processedData = dataset.map(d => ({
             Area: +d.AREA,
             Area_Name: d["AREA NAME"],
             latitude: +d.LAT,
@@ -31,6 +31,30 @@ export async function loadCrimeData() {
     }
 }
 
+export async function filterCrimesByType(type) {
+    const data = await d3.csv("Crime_Data_from_2020_to_Present.csv");
+    const sexCrimes = ["beastiality", "indecent exposure", "lewd", "pimping", "peeping tom"];
+
+    return data.filter(d => {
+        const desc = d["Crm Cd Desc"]?.toLowerCase() || "";
+        switch (type) {
+            case "battery_assault":
+                return desc.includes("assault") || desc.includes("battery");
+
+            case "minors":
+                return desc.includes("child");
+
+            case "burglary_theft":
+                return desc.includes("burglary") || desc.includes("theft") || desc.includes("purse snatching");
+
+            case "sexual":
+                return sexCrimes.some(term => desc.includes(term));
+
+            case "all":
+                return true;
+
+        }
+    });
 export async function countCrimes(){
     try {
         const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
@@ -65,6 +89,7 @@ export async function countCrimes(){
         console.error("Error loading crime data:", error);
         return []; // Return empty array if error occurs
     }
+
 }
 
 // export async function loadCrimeData() {
@@ -248,11 +273,11 @@ export async function countCrimes(){
     
 //     //Referenced HW3 for the Bar Charts [add more official looking reference later]
     
-//     }).catch(function(error) {
-//     console.log(error);
-// });
+// //     }).catch(function(error) {
+// //     console.log(error);
+// // });
 
-// ///
+// // ///
 
-// }
+// // }
 
