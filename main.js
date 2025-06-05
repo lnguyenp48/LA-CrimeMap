@@ -55,24 +55,43 @@ export async function filterCrimesByType(type) {
 
         }
     });
+export async function countCrimes(){
+    try {
+        const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
+        
+        // Process raw data
+        const processedData = rawData.map(d => ({
+            Area: +d.AREA,
+            Area_Name: d["AREA NAME"],
+            // DATE_OCC: d["DATE OCC"], // figure out area counts first before doing the rest
+            // Vict_Age: +d["Vict Age"],
+            // Vict_Sex: d["Vict Sex"]
+        }));
+
+        const areas = {};
+        processedData.forEach(d => {
+            if (d.Area_Name in areas) {
+                areas[d.Area_Name].count += 1;
+            } else {
+                const area = {
+                    area: d.Area,
+                    area_name: d.Area_Name,
+                    count: 1
+                }
+                areas[d.Area_Name] = area;
+            }
+        });
+        const areaCrimeCounts = [];
+        Object.keys(areas).forEach(d => { areaCrimeCounts.push(areas[d]); });
+        return areaCrimeCounts;
+
+    } catch (error) {
+        console.error("Error loading crime data:", error);
+        return []; // Return empty array if error occurs
+    }
+
 }
 
-
-
-export async function countCrimes() {
-    const districts = {};
-    const data = await d3.csv("Crime_Data_from_2020_to_Present.csv");
-
-    data.forEach(incident => {
-        const district = incident["AREA NAME"].toUpperCase();
-        if (!districts[district]) {
-            districts[district] = { count: 0 };
-        }
-        districts[district].count += 1;
-    });
-
-    return districts;
-}
 // export async function loadCrimeData() {
 //     // boundaries and margin setup
 // const width = window.innerWidth;
@@ -253,78 +272,6 @@ export async function countCrimes() {
 //         //Likely add some multiplier to the width/heights/etc. to make sure the spacing is consitient, wait until they can show up to experiment
     
 //     //Referenced HW3 for the Bar Charts [add more official looking reference later]
-
-    // HEATMAP STUFF
-
-//     const svg2 = d3.select("#heatmap")
-//         .append("svg")
-//         .attr("width", "100%")
-//         .attr("height", "100%")
-//         .on("click", reset);
-    
-//     const g = svg2.append("g");
-//     const colorscheme = d3.scaleQuantize([1,10], d3.schemeBlues[9]); // can change later probably
-//     const countColor = new Map(areaCrimeCounts.map(d => [d.area, d.count]));
-//     console.log(countColor);
-
-//     projection.fitSize([900, 600], geoData); // Refit projection based on actual GeoJSON bounds
-//     const tooltip = d3.select("#heatmaptooltip");
-//     const overviewSvg = d3.select("#overviewMap");
-//     const overviewWidth = 200, overviewHeight = 150;
-
-//     const overviewProjection = d3.geoMercator()
-//         .fitSize([overviewWidth, overviewHeight], geoData);
-
-//     const overviewPath = d3.geoPath().projection(overviewProjection);
-
-//     const overviewG = overviewSvg.append("g");
-//     overviewG.selectAll("path")
-//         .data(geoData.features)
-//         .join("path")
-//         .attr("d", overviewPath)
-//         .attr("fill", "#eee")
-//         .attr("stroke", "#555");
-
-//     const viewRect = overviewSvg.append("rect")
-//         .attr("fill", "gray")
-//         .attr("opacity", 0.3)
-//         .attr("stroke-width", 1);
-    
-//     const zoom = d3.zoom()
-//         .scaleExtent([1, 8])
-//         .on("start", zoomStarted)
-//         .on("zoom", zoomed)
-//         // .on("end", zoomEnded);
-
-//     function zoomEnded(event) {
-//         // Run if dragging (mousedown + mouseup)
-//         if (event.sourceEvent && event.sourceEvent.type === "mouseup") {
-//             // get mouse position
-//             const [mx, my] = d3.pointer(event.sourceEvent, svg2.node());
-    
-//             //find element under mouse
-//             const element = document.elementFromPoint(event.sourceEvent.clientX, event.sourceEvent.clientY);
-            
-//             //check if element under mouse is a district since the map disttricts are rendered as SVG <path> elements
-//             if (element && element.tagName === "path") {
-//                 //wraps DOM element that is under moust in a d3 selection so can use D3 methods on it then datum gets the data object boung to that DOM
-//                 const d = d3.select(element).datum();
-//                     tooltip.style("display", "block")
-//                         .html(`<strong>${d.properties.APREC}</strong>`)
-//                         .style("left", (event.sourceEvent.pageX + 10) + "px")
-//                         .style("top", (event.sourceEvent.pageY + 10) + "px");  
-//             }
-//         }
-//     }
-
-//     const divisions = g.selectAll("path")
-//         .data(geoData.features)
-//         .join("path")
-//             .attr("d", d3.geoPath().projection(projection))
-//             .attr("fill", d => colorscheme(countColor.get(d.area)))
-//             .attr("stroke", "#333")
-
-
     
 // //     }).catch(function(error) {
 // //     console.log(error);

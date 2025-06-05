@@ -4,10 +4,12 @@
  *  3. https://d3-graph-gallery.com/graph/interactivity_tooltip.html#position
  *  4. https://observablehq.com/@d3/zoom-to-bounding-box 
  *  5. https://observablehq.com/@davidnmora/d3-zoom-gentle-introduction 
+ *  6. https://stackoverflow.com/questions/12068510/calculate-centroid-d3 
 **/
 import { countCrimes } from './main.js';
 
-export async function initMap(crimeData) {
+
+export async function initMap(crimeData, countCrimes) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
             d3.json("data/lapd_districts.geojson"),
@@ -29,6 +31,7 @@ export async function initMap(crimeData) {
         
         const [x, y] = projection.translate();
         projection.translate([x + 100, y]);
+
 
         const overviewProjection = d3.geoMercator()
             .fitSize([200, 180], geoData);
@@ -68,6 +71,37 @@ export async function initMap(crimeData) {
                 zoomed(event); 
             });
 
+        // nodes for each division
+        const circles = g.selectAll("circles")
+            .data(geoData.features)
+            .enter().append('circle')
+                .attr('transform', function(d) {
+                    return 'translate(' + d3.geoPath().projection(projection).centroid(d) + ')';
+                })
+                .attr('r', 7)
+                .attr('stroke-width', 0.7)
+                .attr('stroke', 'black')
+                .attr('fill', "rgb(214, 174, 255)")
+                .attr("opacity", 1)
+            .on("click", clicked) // adjust to update crime area + counts of bar charts
+            .on("mouseover", function(d) {
+                d3.select(this)
+                    .transition().duration(300)
+                    .attr("r", 10)
+                    .style("stroke", "lightgrey")
+                    .style("stroke-width", 3)
+                    .style("fill", "rgb(240, 226, 255)")
+                })
+            .on("mouseleave", function(d) {
+                d3.select(this)
+                    .transition().duration(300)
+                    .attr("r", 7)
+                    .style("stroke", "black")
+                    .style("stroke-width", 0.7)
+                    .style("fill", "rgb(214, 174, 255)")
+            })
+
+
         svg2.call(zoom);
         let currentData = crimeData;
        
@@ -77,7 +111,6 @@ export async function initMap(crimeData) {
             drawLegend();
         }
         const divisions = drawBoundaries(g, geoData, projection, clicked);
-
 
         // Tooltip setup
         const tooltip = d3.select("#heatmaptooltip");
@@ -120,7 +153,7 @@ export async function initMap(crimeData) {
             
         }
         function zoomed(event) { 
-            const transform = event.transform;
+            const {transform} = event;
                 g.attr("transform", transform);
             
                 const bbox = svg2.node().getBoundingClientRect();
@@ -154,6 +187,14 @@ export async function initMap(crimeData) {
             updateData: (newData, radius = 8) => {
                 currentData = newData;
 
+                // moves nodes to top so we can see it above hexes? this may change as it covers the hexes a bit
+                // d3.selectAll("circle", "hexbin-layer").sort(function(a, b) {
+                //     if (a.type === b.type)
+                //         return 0;
+                //     return a.type === "circle" ? 1 : -1;
+                // })
+                // ^^^ not working, fix later?
+
                 // Update crime visualization when data changes
                 g.selectAll(".hexbin-layer").remove();
                 g.selectAll(".district-boundary").remove();
@@ -161,8 +202,8 @@ export async function initMap(crimeData) {
                 addCrimeHeatmap(g, newData, projection, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
                 setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"), districtCrimeCounts);
-                
-            }
+         
+           }
             
         };
     } catch (error) {
@@ -298,4 +339,3 @@ function drawLegend() {
         .style("font-size", "12px")
         .style("font-weight", "bold");
 }
-

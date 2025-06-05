@@ -1,5 +1,6 @@
 import { initMap } from './heatmap.js';
-import { loadCrimeData, filterCrimesByType } from './main.js';
+import { loadCrimeData, filterCrimesByType, countCrimes } from './main.js';
+
 
 async function createDashboard(selectedFilter = 'all') {
     const loading = document.getElementById("loading");
@@ -9,6 +10,8 @@ async function createDashboard(selectedFilter = 'all') {
         const crimeData = await loadCrimeData();
         let filteredCrimeData = await filterCrimesByType(selectedFilter);
 
+        const crimeCount = await countCrimes();
+
         filteredCrimeData = await loadCrimeData(filteredCrimeData);
         console.log(filteredCrimeData);
 
@@ -16,7 +19,7 @@ async function createDashboard(selectedFilter = 'all') {
         d3.select("#heatmap").selectAll("*").remove();
         d3.select("#overviewMap").selectAll("*").remove();
 
-        const map = await initMap(filteredCrimeData);
+        const map = await initMap(filteredCrimeData, crimeCount);
         
     
     } catch (error) {
