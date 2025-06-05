@@ -24,6 +24,7 @@ export async function initMap(crimeData) {
         const projection = d3.geoMercator()
             .fitSize([900, 800], geoData);
 
+
         const overviewProjection = d3.geoMercator()
             .fitSize([200, 180], geoData);
         

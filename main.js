@@ -1,6 +1,7 @@
 export async function loadCrimeData() {
     try {
         const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
+
         
         // Process raw data
         const processedData = rawData.map(d => ({
@@ -178,6 +179,7 @@ export function countCrimes(){
 //                         area_name: d.Area_Name,
 //                         Date_OCC: d.DATE_OCC,
 //                         count: 1,
+
     
 //                         //Other Paramaters that will likely be organized by [more to be added]
 //                         Vict_Age: d.Vict_Age,
@@ -217,8 +219,76 @@ export function countCrimes(){
     
 //     //Referenced HW3 for the Bar Charts [add more official looking reference later]
 
+    // HEATMAP STUFF
 
-//     // ALLUVIAL PLOT:
+    const svg2 = d3.select("#heatmap")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .on("click", reset);
+    
+    const g = svg2.append("g");
+    const colorscheme = d3.scaleQuantize([1,10], d3.schemeBlues[9]); // can change later probably
+    const countColor = new Map(areaCrimeCounts.map(d => [d.area, d.count]));
+    console.log(countColor);
+
+    projection.fitSize([900, 600], geoData); // Refit projection based on actual GeoJSON bounds
+    const tooltip = d3.select("#heatmaptooltip");
+    const overviewSvg = d3.select("#overviewMap");
+    const overviewWidth = 200, overviewHeight = 150;
+
+    const overviewProjection = d3.geoMercator()
+        .fitSize([overviewWidth, overviewHeight], geoData);
+
+    const overviewPath = d3.geoPath().projection(overviewProjection);
+
+    const overviewG = overviewSvg.append("g");
+    overviewG.selectAll("path")
+        .data(geoData.features)
+        .join("path")
+        .attr("d", overviewPath)
+        .attr("fill", "#eee")
+        .attr("stroke", "#555");
+
+    const viewRect = overviewSvg.append("rect")
+        .attr("fill", "gray")
+        .attr("opacity", 0.3)
+        .attr("stroke-width", 1);
+    
+    const zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on("start", zoomStarted)
+        .on("zoom", zoomed)
+        // .on("end", zoomEnded);
+
+    function zoomEnded(event) {
+        // Run if dragging (mousedown + mouseup)
+        if (event.sourceEvent && event.sourceEvent.type === "mouseup") {
+            // get mouse position
+            const [mx, my] = d3.pointer(event.sourceEvent, svg2.node());
+    
+            //find element under mouse
+            const element = document.elementFromPoint(event.sourceEvent.clientX, event.sourceEvent.clientY);
+            
+            //check if element under mouse is a district since the map disttricts are rendered as SVG <path> elements
+            if (element && element.tagName === "path") {
+                //wraps DOM element that is under moust in a d3 selection so can use D3 methods on it then datum gets the data object boung to that DOM
+                const d = d3.select(element).datum();
+                    tooltip.style("display", "block")
+                        .html(`<strong>${d.properties.APREC}</strong>`)
+                        .style("left", (event.sourceEvent.pageX + 10) + "px")
+                        .style("top", (event.sourceEvent.pageY + 10) + "px");  
+            }
+        }
+    }
+
+    const divisions = g.selectAll("path")
+        .data(geoData.features)
+        .join("path")
+            .attr("d", d3.geoPath().projection(projection))
+            .attr("fill", d => colorscheme(countColor.get(d.area)))
+            .attr("stroke", "#333")
+
 
     
 //     }).catch(function(error) {
@@ -228,3 +298,4 @@ export function countCrimes(){
 // ///
 
 // }
+
