@@ -106,9 +106,9 @@ export async function initMap(crimeData, countCrimes) {
        
         // Add crime data and boundaries
         if (crimeData && crimeData.length > 0) {
-            addCrimeHeatmap(g, crimeData, projection);
+            addCrimeHeatmap(g, crimeData, projection, drawTimeline);
             drawLegend();
-            drawTimeline(crimeData);
+            // drawTimeline(crimeData);
         }
         const divisions = drawBoundaries(g, geoData, projection, clicked);
 
@@ -127,7 +127,7 @@ export async function initMap(crimeData, countCrimes) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, projection, 8);
+            addCrimeHeatmap(g, currentData, projection, drawTimeline, 8);
             const resetDivisions = drawBoundaries(g, geoData, projection, clicked);
             
             setupTooltip(resetDivisions, tooltip, districtCrimeCounts);
@@ -147,7 +147,7 @@ export async function initMap(crimeData, countCrimes) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, projection, 3);
+            addCrimeHeatmap(g, currentData, projection, drawTimeline, 3);
             const zoomedDivisions = drawBoundaries(g, geoData, projection, clicked);
             setupTooltip(zoomedDivisions, tooltip, districtCrimeCounts);
             
@@ -199,7 +199,7 @@ export async function initMap(crimeData, countCrimes) {
                 g.selectAll(".hexbin-layer").remove();
                 g.selectAll(".district-boundary").remove();
                 
-                addCrimeHeatmap(g, newData, projection, radius);
+                addCrimeHeatmap(g, newData, projection, drawTimeline, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
                 setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"), districtCrimeCounts);
          
@@ -213,7 +213,7 @@ export async function initMap(crimeData, countCrimes) {
 }
 
 // Helper functions
-function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
+function addCrimeHeatmap(container, crimeData, projection, drawTimeline, radius = 8) {
     const hexPoints = crimeData.map(d => {
         // console.log("Coords:", d.longitude, d.latitude);
 
@@ -230,7 +230,8 @@ function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
     const hexColor = d3.scaleThreshold()
         .domain([1, 10, 25, 50, 100, 250, 500, 1000, 2000])
         .range(d3.schemeReds[9]);
-
+    
+    drawTimeline(crimeData);
     container.append("g")
         .attr("class", "hexbin-layer")
         .attr("clip-path", "url(#map-clip)")
@@ -243,6 +244,8 @@ function addCrimeHeatmap(container, crimeData, projection, radius = 8) {
         .attr("stroke", "none")
         .attr("opacity", 0.7)
         .style("pointer-events", "none");
+
+   
 }
 
 function setupTooltip(divisions, tooltip, districtCrimeCounts) {
@@ -341,6 +344,8 @@ function drawLegend() {
 }
 
 function drawTimeline(crimeData) {
+    d3.select("#timeline").selectAll("svg").remove();
+
     const timeline = document.querySelector("#timeline");
     const timelineWidth = timeline.clientWidth;
     const timelineHeight = timeline.clientHeight;
