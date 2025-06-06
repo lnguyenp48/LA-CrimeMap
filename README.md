@@ -14,7 +14,7 @@ The main feature of the visualization is the heatmap displaying various district
 - Clickable district nodes that shows crime data regarding the district through bar charts
 - Different map views based on selected victim or crime attributes
 
-We believe that this visualization and the data it presents could be applied by having it used in checking which areas have consistently high crime rates, which can help city officials decide where to invest money for development or crime prevention. It may also allow civilians to get an idea of which areas they want to avoid if they worry about their own safety. 
+We believe that this visualization and the data it presents could be applied by having it used in checking which areas have consistently high crime rates, which can help city officials decide where to invest money for development or crime prevention. It may also allow civilians to get an idea of which areas to avoid if they worry about their own safety. 
 
 ## Installation Guide
 
@@ -28,7 +28,7 @@ cd LA-CrimeMap (or your own path to cloned repository)
 
 ## How to Run
 
-We recommend running this through the [Live Server Extension](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) through Visual Studio Code. Otherwise, you may use Python 3 to start your own live server
+We recommend running this through the [Live Server Extension](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) using Visual Studio Code. Otherwise, you may use Python 3 to start your own live server
 ```bash
 python3 -m http.server 8000
 ```
