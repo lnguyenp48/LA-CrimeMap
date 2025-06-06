@@ -1,5 +1,5 @@
 //rmbr to add getStartDate, getEndDate
-import { initMap } from './heatmap.js';
+import { initMap, getStartDate, getEndDate } from './heatmap.js';
 import { loadCrimeData, filterCrimesByType, countCrimes } from './main.js';
 
 
@@ -14,10 +14,10 @@ async function createDashboard(selectedFilter = 'all') {
         const fullData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
 
         // get time range 
-        // const startDate = getStartDate();
-        // const endDate = getEndDate();
-        const startDate ="01/01/2022 12:00:00 AM";
-        const endDate = "02/01/2022 12:00:00 AM";
+        const startDate = getStartDate();
+        const endDate = getEndDate();
+        // const startDate ="01/01/2022 12:00:00 AM";
+        // const endDate = "02/01/2022 12:00:00 AM";
 
         let filteredCrimeData = await filterCrimesByType(selectedFilter, startDate, endDate);
 

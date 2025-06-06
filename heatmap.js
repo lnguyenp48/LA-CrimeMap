@@ -8,7 +8,6 @@
 **/
 import { countCrimes } from './main.js';
 
-
 export async function initMap(crimeData, fullData, countCrimes) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
@@ -347,6 +346,11 @@ function drawLegend() {
         .style("font-weight", "bold");
 }
 
+// Global variables for getStartDate() and getEndDate()
+let timelineBrushSelection = null;
+let timelineBrushDefault = null;
+const formateTimelineDate = d3.timeFormat("%m/%d/%Y %I:%M:%S %p");
+
 function drawTimeline(crimeData) {
     d3.select("#timeline").selectAll("svg").remove();
 
@@ -368,6 +372,12 @@ function drawTimeline(crimeData) {
 
     crimeData.sort((a, b) => d3.ascending(a.parsedDateOcc, b.parsedDateOcc));
     const extent = d3.extent(crimeData, d => d.parsedDateOcc);
+
+    timelineBrushDefault = [
+        formateTimelineDate(crimeData[0].parsedDateOcc),
+        formateTimelineDate(crimeData[crimeData.length - 1].parsedDateOcc)
+    ];
+    console.log(timelineBrushDefault);
 
     const xScale = d3.scaleTime()
         .domain(extent)
@@ -422,7 +432,6 @@ function drawTimeline(crimeData) {
         .attr("class", "brush")
         .call(brush);
 
-    let brushSelection = null;
     let currentXScale = xScale;
 
     function zoomed(event) {
@@ -435,33 +444,40 @@ function drawTimeline(crimeData) {
 
         xAxisGroup.call(dynamicAxis);
 
-        if (brushSelection) {
-            const [start, end] = brushSelection;
+        if (timelineBrushSelection) {
+            const [start, end] = timelineBrushSelection;
             brushGroup.call(brush.move, [currentXScale(start), currentXScale(end)]);
         }
     }
 
     function brushed(event) {
         if (!event.selection) {
-            brushSelection = null;
+            timelineBrushSelection = null;
             return;
         }
 
         const [x0, x1] = event.selection;
         const start = currentXScale.invert(x0);
         const end = currentXScale.invert(x1);
-        brushSelection = [start, end];
+        timelineBrushSelection = [start, end];
 
-        console.log("Brushed:", brushSelection);
+        getStartDate();
+        getEndDate();
     }
 }
 
 // return the start and end dates of range selected by user on timeline
 // return as a string in this format: "01/01/2022 12:00:00 AM" preferably as that is what the filter function in main.js is expecting
 // if returned in another format, please update the filter function in main.js too, ty
-// export function getStartDate(){
-//     return;
-// }
-// export function getEndDate(){
 
-// }
+export function getStartDate() {
+    if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[0]);
+    if (timelineBrushDefault) return timelineBrushDefault[0];
+    return "01/01/2022 12:00:00 AM"; // This is the first entry in the dataset. Needed to return something for index.js
+}
+
+export function getEndDate() {
+    if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[1]);
+    if (timelineBrushDefault) return timelineBrushDefault[1];
+    return "12/29/2024 12:00:00 AM"; // This is the last entry in the dataset. Needed to return something for index.js
+}
