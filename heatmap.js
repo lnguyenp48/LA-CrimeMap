@@ -5,6 +5,7 @@
  *  4. https://observablehq.com/@d3/zoom-to-bounding-box 
  *  5. https://observablehq.com/@davidnmora/d3-zoom-gentle-introduction 
  *  6. https://stackoverflow.com/questions/12068510/calculate-centroid-d3 
+ *  7. https://github.com/via-teaching/ecs163-25s/tree/main/Homework2
 **/
 import { countCrimes } from './main.js';
 
@@ -464,6 +465,7 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
         if (d.Year == year && d.Month >= monthStart && d.Month <= monthEnd) {
             console.log(d.Month);
+            //Hoping to make a processedData that would hold the data only from the timeframe
         }
     });
 
@@ -498,7 +500,7 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // X ticks
     const x1 = d3.scaleBand()
-        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .domain(victAgeData.map(d => d.Vict_Age))
         .range([0, barChartWidth])
         .paddingInner(0.3)
         .paddingOuter(0.2);
@@ -515,13 +517,23 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // Y ticks
     const y1 = d3.scaleLinear()
-        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .domain([0, d3.max(victAgeData, d => d.count)])
         .range([barChartHeight, 0])
         .nice();
 
     const yAxisCall1 = d3.axisLeft(y1)
                         .ticks(10);
     victAgeBarChart.append("g").call(yAxisCall1);
+
+    //Bars
+    const victAgeBars = victSexBarChart.selectAll("rect").data(victSexData);
+
+    victAgeBars.enter().append("rect")
+        .attr("y", d => y1(d.count))
+        .attr("x", d => x1(d.Vict_Sex))
+        .attr("width", x1.bandwidth())
+        .attr("height", d => barChartHeight - y1(d.count))
+        .attr("fill", d => hexColor(d.length));
 
 
     //Victim Sex
@@ -555,7 +567,7 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // X ticks
     const x2 = d3.scaleBand()
-        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .domain(victSexData.map(d => d.Vict_Sex))
         .range([0, barChartWidth])
         .paddingInner(0.3)
         .paddingOuter(0.2);2
@@ -572,7 +584,7 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // Y ticks
     const y2 = d3.scaleLinear()
-        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .domain([0, d3.max(victSexData, d => d.count)])
         .range([barChartHeight, 0])
         .nice();
 
@@ -580,9 +592,17 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
                         .ticks(10);
     victSexBarChart.append("g").call(yAxisCall2);
 
+    //Bars
+    const victSexBars = victSexBarChart.selectAll("rect").data(victSexData);
 
+    victSexBars.enter().append("rect")
+        .attr("y", d => y2(d.count))
+        .attr("x", d => x2(d.Vict_Sex))
+        .attr("width", x2.bandwidth())
+        .attr("height", d => barChartHeight - y2(d.count))
+        .attr("fill", d => hexColor(d.length));
 
-
+        
     //Location Type
     const locationCounts = processedData.reduce((s, { Premis_Desc }) => (s[Premis_Desc] = (s[Premis_Desc] || 0) + 1, s), {});
     const locationData = Object.keys(locationCounts).map((key) => ({ Generation: key, count: locationCounts[key] }));
@@ -615,7 +635,7 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // X ticks
     const x3 = d3.scaleBand()
-        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .domain(primaryTypeData.map(d => d.Premis_Desc))
         .range([0, barChartWidth])
         .paddingInner(0.3)
         .paddingOuter(0.2);
@@ -632,14 +652,21 @@ function drawBarCharts(crimeData, year, monthStart, monthEnd) {
 
     // Y ticks
     const y3 = d3.scaleLinear()
-        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .domain([0, d3.max(locationData, d => d.count)])
         .range([barChartHeight, 0])
         .nice();
 
     const yAxisCall3 = d3.axisLeft(y3)
                         .ticks(10);
     locationBarChart.append("g").call(yAxisCall3);
-    //Count based on attribute
-    //Make bars
-        //W/ Colors
+
+    //Bars
+    const locationBars = locationBarChart.selectAll("rect").data(locationData);
+
+    locationBars.enter().append("rect")
+        .attr("y", d => y3(d.count))
+        .attr("x", d => x3(d.Premis_Desc))
+        .attr("width", x3.bandwidth())
+        .attr("height", d => barChartHeight - y3(d.count))
+        .attr("fill", d => hexColor(d.length));
 }
