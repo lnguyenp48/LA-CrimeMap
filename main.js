@@ -46,7 +46,7 @@ function getMonthYear(dateInput) {
 export async function filterCrimesByType(type, startDate, endDate) {
     const data = await d3.csv("Crime_Data_from_2020_to_Present.csv");
     const sexCrimes = ["beastiality", "indecent exposure", "lewd", "pimping", "peeping tom"];
-    
+
     const { month: start_month, year: start_year } = getMonthYear(startDate);
     const { month: end_month, year: end_year } = getMonthYear(endDate);
 
