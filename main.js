@@ -88,6 +88,11 @@ export async function countCrimes(dataset) {
         const areas = {};
 
         dataset.forEach(d => {
+            if (d.Area_Name === "N Hollywood") {
+                d.Area_Name = "North Hollywood";
+            } else if (d.Area_Name === "West LA") {
+                d.Area_Name = "West Los Angeles";
+            }
             const areaName = d.Area_Name?.toUpperCase();  // Normalize to uppercase
             const areaCode = +d.Area;
 
