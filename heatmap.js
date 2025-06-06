@@ -186,6 +186,8 @@ export async function initMap(crimeData, fullData) {
             }
         }
 
+        drawBarCharts(crimeData, 2022, 1, 3); //For testing
+
         return {
             updateData: (newData, radius = 8) => {
                 currentData = newData;
@@ -314,6 +316,7 @@ function drawLegend() {
         .style("font-weight", "bold");
 }
 
+//Timeline
 // Global variables for getStartDate() and getEndDate()
 let timelineBrushSelection = null;
 let timelineBrushDefault = null;
@@ -482,4 +485,198 @@ export function getEndDate() {
     if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[1]);
     if (timelineBrushDefault) return timelineBrushDefault[1];
     return "12/29/2024 12:00:00 AM"; // This is the last entry in the dataset. Needed to return something for index.js
+}
+
+//Bar Charts
+function drawBarCharts(crimeData, year, monthStart, monthEnd) {
+    //Made to fit 3 bar charts at a time
+    const barChart = document.querySelector("#barcharts");
+    const barChartWidth = barChart.clientWidth;
+    const barChartHeight = barChart.clientHeight/3;
+
+    //Organize data via timeframe and attributes
+    crimeData.forEach(d => {
+        d.Year = Number(d.DATE_OCC.substring(6, 10))
+        d.Month = Number(d.DATE_OCC.substring(0, 2))
+
+        if (d.Year == year && d.Month >= monthStart && d.Month <= monthEnd) {
+            console.log(d.Month);
+        }
+    });
+
+    //Victim Age
+    const victAgeCounts = processedData.reduce((s, { Vict_Age }) => (s[Vict_Age] = (s[Vict_Age] || 0) + 1, s), {});
+    const victAgeData = Object.keys(victAgeCounts).map((key) => ({ Generation: key, count: victAgeCounts[key] }));
+    console.log("victAgeData", victAgeData);
+
+    const victAgeBarChart = d3.select("#barcharts")
+    .append("svg")
+    .attr("width", barChartWidth)
+    .attr("height", barChartHeight)
+    .style("user-select", "none");  
+
+    // X label
+    victAgeBarChart.append("text")
+        .attr("x", barChartWidth / 2)
+        .attr("y", barChartHeight + 55)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .text("Victim Age");
+
+
+    // Y label
+    victAgeBarChart.append("text")
+        .attr("x", -(barChartHeight / 2))
+        .attr("y", -40)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .text("Amount");
+
+    // X ticks
+    const x1 = d3.scaleBand()
+        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .range([0, barChartWidth])
+        .paddingInner(0.3)
+        .paddingOuter(0.2);
+
+    const xAxisCall1 = d3.axisBottom(x1);
+    victAgeBarChart.append("g")
+        .attr("transform", `translate(0, ${barChartHeight})`)
+        .call(xAxisCall1)
+        .selectAll("text")
+            .attr("y", "10")
+            .attr("x", "-5")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-40)");
+
+    // Y ticks
+    const y1 = d3.scaleLinear()
+        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .range([barChartHeight, 0])
+        .nice();
+
+    const yAxisCall1 = d3.axisLeft(y1)
+                        .ticks(10);
+    victAgeBarChart.append("g").call(yAxisCall1);
+
+
+    //Victim Sex
+    const victSexCounts = processedData.reduce((s, { Vict_Sex }) => (s[Vict_Sex] = (s[Vict_Sex] || 0) + 1, s), {});
+    const victSexData = Object.keys(victSexCounts).map((key) => ({ Generation: key, count: victSexCounts[key] }));
+    console.log("victSexData", victSexData);
+
+    const victSexBarChart = d3.select("#barcharts")
+    .append("svg")
+    .attr("width", barChartWidth)
+    .attr("height", barChartHeight)
+    .style("user-select", "none");  
+
+    // X label
+    victSexBarChart.append("text")
+        .attr("x", barChartWidth / 2)
+        .attr("y", barChartHeight + 55)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .text("Victim Sex");
+
+
+    // Y label
+    victSexBarChart.append("text")
+        .attr("x", -(barChartHeight / 2))
+        .attr("y", -40)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .text("Amount");
+
+    // X ticks
+    const x2 = d3.scaleBand()
+        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .range([0, barChartWidth])
+        .paddingInner(0.3)
+        .paddingOuter(0.2);2
+
+    const xAxisCall2 = d3.axisBottom(x2);
+    barChart.append("g")
+        .attr("transform", `translate(0, ${barChartHeight})`)
+        .call(xAxisCall2)
+        .selectAll("text")
+            .attr("y", "10")
+            .attr("x", "-5")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-40)");
+
+    // Y ticks
+    const y2 = d3.scaleLinear()
+        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .range([barChartHeight, 0])
+        .nice();
+
+    const yAxisCall2 = d3.axisLeft(y2)
+                        .ticks(10);
+    victSexBarChart.append("g").call(yAxisCall2);
+
+
+
+
+    //Location Type
+    const locationCounts = processedData.reduce((s, { Premis_Desc }) => (s[Premis_Desc] = (s[Premis_Desc] || 0) + 1, s), {});
+    const locationData = Object.keys(locationCounts).map((key) => ({ Generation: key, count: locationCounts[key] }));
+    console.log("locationData", locationData);
+
+
+    const locationBarChart = d3.select("#barcharts")
+    .append("svg")
+    .attr("width", barChartWidth)
+    .attr("height", barChartHeight)
+    .style("user-select", "none");  
+
+    // X label
+    locationBarChart.append("text")
+        .attr("x", barChartWidth / 2)
+        .attr("y", barChartHeight + 55)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .text("Victim Age");
+
+
+    // Y label
+    locationBarChart.append("text")
+        .attr("x", -(barChartHeight / 2))
+        .attr("y", -40)
+        .attr("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .text("Amount");
+
+    // X ticks
+    const x3 = d3.scaleBand()
+        .domain(primaryTypeData.map(d => d.Generation)) //CHANGE HERE
+        .range([0, barChartWidth])
+        .paddingInner(0.3)
+        .paddingOuter(0.2);
+
+    const xAxisCall3 = d3.axisBottom(x3);
+    locationBarChart.append("g")
+        .attr("transform", `translate(0, ${barChartHeight})`)
+        .call(xAxisCall3)
+        .selectAll("text")
+            .attr("y", "10")
+            .attr("x", "-5")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-40)");
+
+    // Y ticks
+    const y3 = d3.scaleLinear()
+        .domain([0, d3.max(primaryTypeData, d => d.count)]) //CHANGE HERE
+        .range([barChartHeight, 0])
+        .nice();
+
+    const yAxisCall3 = d3.axisLeft(y3)
+                        .ticks(10);
+    locationBarChart.append("g").call(yAxisCall3);
+    //Count based on attribute
+    //Make bars
+        //W/ Colors
 }
