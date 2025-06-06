@@ -13,7 +13,8 @@ export async function loadCrimeData(dataset) {
             Date_Rptd: d["Date Rptd"],
             DATE_OCC: d["DATE OCC"],
             Vict_Age: +d["Vict Age"],
-            Vict_Sex: d["Vict Sex"]
+            Vict_Sex: d["Vict Sex"],
+            Premise: d["Premis Desc"]
         }));
 
         // Filter valid coordinates
@@ -78,6 +79,45 @@ export async function filterCrimesByType(type, startDate, endDate) {
         }
     });
 }
+// This function filters the original crime dataset based on the type of crime committed
+// type: keyword used to filter data that matches this type
+// returns data array with all incidents matching the type of crime user wants to filter for 
+export async function getLocationCounts(filteredDataset, district = "all") {
+    const locationTypes = {
+        school: 0,
+        public_transportation: 0,
+        retail: 0,
+        residence: 0,
+        sidewalk: 0
+    };
+
+    filteredDataset.forEach(d => {
+        if (district !== "all" && d.Area_Name.toUpperCase() !== district.toUpperCase()) {
+            return;
+        }
+
+        const location = d.Premise.toUpperCase();
+
+        if(location.includes("SCHOOL")){
+            locationTypes["school"]++;
+        }
+        if(location.includes("BUS") || location.includes("MTA")) {
+            locationTypes["public_transportation"]++;
+        } 
+        if(location.includes("SHOP") || location.includes("STORE")) {
+            locationTypes["retail"]++;
+        } 
+        if(location.includes("APARTMENT") || location.includes("TOWNHOUSE") || location.includes("GARAGE") || location.includes("DWELLING") || location.includes("DRIVEWAY")) {
+            locationTypes["residence"]++;
+        } 
+        if(location.includes("SIDEWALK")) {
+            locationTypes["sidewalk"]++;
+        } 
+    });
+
+    console.log("HERE", locationTypes);
+    return locationTypes;
+}
 export async function countCrimes(dataset) {
     try {
         if (!dataset) {
@@ -93,7 +133,7 @@ export async function countCrimes(dataset) {
             } else if (d.Area_Name === "West LA") {
                 d.Area_Name = "West Los Angeles";
             }
-            const areaName = d.Area_Name?.toUpperCase();  // Normalize to uppercase
+            const areaName = d.Area_Name?.toUpperCase(); 
             const areaCode = +d.Area;
 
             if (!areaName) return;

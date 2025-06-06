@@ -9,7 +9,7 @@
 	<div id="dashboard">
 		<div id="main">
 			<div id="left">
-				<div id="title">Heatmap of All Crimes from 2022 to 2024 in Los Angeles County</div>
+				<div id="title"><span id="crimeType">All Crimes</span> in Los Angeles County</div>
 					<div id="heatmaptooltip"></div>
 					<div id="loading">Loading map, please wait...</div>
 					<svg id="heatmap"></svg>
@@ -32,7 +32,9 @@
 				<div id="timeline"></div>
 			</div>
 			<div id="right">
-				<div id="barcharts"></div>
+				<div id="barcharts">
+					<svg id="locationBarChart"></svg>
+				</div>
 			</div>
 			<!-- <button>Start</button> -->
 		</div>
@@ -54,15 +56,15 @@
 		body{
 			padding-top: 20px;
 		}
-	#title{
-		position: absolute;
-		top: 1.5vh;
-		left: 15vw;
-		font-family: sans-serif;
-		font-size: 20px;
-		font-weight: 500;
-		
-	}
+		#title{
+			position: absolute;
+			top: 1.5vh;
+			left: 26vw;
+			font-family: sans-serif;
+			font-size: 20px;
+			font-weight: 500;
+			
+		}
 		#dashboard {
 			display: flex;
 			height: 100vh;

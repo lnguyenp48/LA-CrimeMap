@@ -8,6 +8,7 @@
  *  7. https://github.com/via-teaching/ecs163-25s/tree/main/Homework2
 **/
 import { countCrimes } from './main.js';
+import { drawBarChart } from './barCharts.js';
 
 
 export async function initMap(crimeData, fullData) {
@@ -72,45 +73,13 @@ export async function initMap(crimeData, fullData) {
                 zoomed(event); 
             });
 
-        // draw nodes for each division
-        function drawCircles(){
-            const circles = g.selectAll("circles")
-                .data(geoData.features)
-                .enter().append('circle')
-                    .attr('transform', function(d) {
-                        return 'translate(' + d3.geoPath().projection(projection).centroid(d) + ')';
-                    })
-                    .attr('r', 7)
-                    .attr('stroke-width', 0.7)
-                    .attr('stroke', 'black')
-                    .attr('fill', "rgb(214, 174, 255)")
-                    .attr("opacity", 1)
-                // .on("click", clicked) // adjust to update crime area + counts of bar charts
-                .on("mouseover", function(d) {
-                    d3.select(this)
-                        .transition().duration(300)
-                        .attr("r", 10)
-                        .style("stroke", "lightgrey")
-                        .style("stroke-width", 3)
-                        .style("fill", "rgb(240, 226, 255)")
-                    })
-                .on("mouseleave", function(d) {
-                    d3.select(this)
-                        .transition().duration(300)
-                        .attr("r", 7)
-                        .style("stroke", "black")
-                        .style("stroke-width", 0.7)
-                        .style("fill", "rgb(214, 174, 255)")
-                })
-        }
-
 
         svg2.call(zoom);
         let currentData = crimeData;
        
         // Add crime data and boundaries
         if (crimeData && crimeData.length > 0) {
-            addCrimeHeatmap(g, crimeData, fullData, projection, drawCircles);
+            addCrimeHeatmap(g, crimeData, fullData, projection);
             drawLegend();
         }
         const divisions = drawBoundaries(g, geoData, projection, clicked);
@@ -130,12 +99,18 @@ export async function initMap(crimeData, fullData) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, fullData, projection, drawCircles, 8);
+            addCrimeHeatmap(g, currentData, fullData, projection, 8);
             const resetDivisions = drawBoundaries(g, geoData, projection, clicked);
             
             setupTooltip(resetDivisions, tooltip, districtCrimeCounts);
         }
         function clicked(event, d) { 
+            const districtName = d.properties.APREC;
+            if (districtName === "North Hollywood") {
+                d.Area_Name = "N Hollywood";
+            } else if (districtName === "West Los Angeles") {
+                d.Area_Name = "West LA";
+            }
             const [[x0, y0], [x1, y1]] = d3.geoPath().projection(projection).bounds(d);
             event.stopPropagation();
             divisions.transition().style("fill", null);
@@ -150,10 +125,15 @@ export async function initMap(crimeData, fullData) {
             g.selectAll(".hexbin-layer").remove();
             g.selectAll(".district-boundary").remove();
 
-            addCrimeHeatmap(g, currentData, fullData, projection, drawCircles, 3);
+            addCrimeHeatmap(g, currentData, fullData, projection, 3);
             const zoomedDivisions = drawBoundaries(g, geoData, projection, clicked);
             setupTooltip(zoomedDivisions, tooltip, districtCrimeCounts);
-            
+
+            try {
+                drawBarChart(crimeData, districtName);
+              } catch (e) {
+                console.error("Error in drawBarChart:", e);
+              }
         }
         function zoomed(event) { 
             const {transform} = event;
@@ -186,28 +166,19 @@ export async function initMap(crimeData, fullData) {
             }
         }
 
-        drawBarCharts(crimeData, 2022, 1, 3); //For testing
 
         return {
             updateData: (newData, radius = 8) => {
                 currentData = newData;
 
-                // moves nodes to top so we can see it above hexes? this may change as it covers the hexes a bit
-                // d3.selectAll("circle", "hexbin-layer").sort(function(a, b) {
-                //     if (a.type === b.type)
-                //         return 0;
-                //     return a.type === "circle" ? 1 : -1;
-                // })
-                // ^^^ not working, fix later?
-
                 // Update crime visualization when data changes
                 g.selectAll(".hexbin-layer").remove();
                 g.selectAll(".district-boundary").remove();
                 
-                addCrimeHeatmap(g, newData, fullData, projection, drawCircles, radius);
+                addCrimeHeatmap(g, newData, fullData, projection, radius);
                 const updatedDivisions = drawBoundaries(g, geoData, projection, clicked);
                 setupTooltip(updatedDivisions, d3.select("#heatmaptooltip"), districtCrimeCounts);
-         
+                
            }
             
         };
@@ -218,7 +189,7 @@ export async function initMap(crimeData, fullData) {
 }
 
 // Helper functions
-function addCrimeHeatmap(container, crimeData, fullData, projection, drawCircles, radius = 8) {
+function addCrimeHeatmap(container, crimeData, fullData, projection, radius = 8) {
     const hexPoints = crimeData.map(d => {
         // console.log("Coords:", d.longitude, d.latitude);
 
@@ -249,8 +220,6 @@ function addCrimeHeatmap(container, crimeData, fullData, projection, drawCircles
         .attr("opacity", 0.7)
         .style("pointer-events", "none");
     
-    drawCircles(); //draw circles AFTER rendering map
-
 }
 
 function drawBoundaries(container, geoData, projection, clicked) {
@@ -312,6 +281,42 @@ function drawLegend() {
         .text("Crime Count")
         .style("font-size", "12px")
         .style("font-weight", "bold");
+}
+
+function setupTooltip(divisions, tooltip, districtCrimeCounts) {
+    const districtCrimeMap = {};
+    districtCrimeCounts.forEach(d => {
+        districtCrimeMap[d.area_name] = d;
+    });
+    divisions
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+            const name = d.properties.APREC;
+            const total = districtCrimeMap[name]?.count || 0;
+
+            tooltip
+                .style("display", "block")
+                .style("background-color", "rgba(255, 255, 255, 0.9)")
+                .style("border", "1px solid black")
+                .style("border-radius", "7px")
+                .style("padding", "5px")
+                .style("color", "#403f3e")
+                .style("font-family", "sans-serif")
+                .style("font-size", "12px")
+                .html(`
+                    <div>
+                        <strong>${name}</strong>
+                        <p>Total Number of Crimes: ${total}</p>
+                    </div>
+                `);       
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("display", "none");
+        });
 }
 
 //Timeline
@@ -449,224 +454,4 @@ export function getEndDate() {
     if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[1]);
     if (timelineBrushDefault) return timelineBrushDefault[1];
     return "12/29/2024 12:00:00 AM"; // This is the last entry in the dataset. Needed to return something for index.js
-}
-
-//Bar Charts
-function drawBarCharts(crimeData, year, monthStart, monthEnd) {
-    //Made to fit 3 bar charts at a time
-    const barChart = document.querySelector("#barcharts");
-    const barChartWidth = barChart.clientWidth;
-    const barChartHeight = barChart.clientHeight/3;
-
-    //Organize data via timeframe and attributes
-    crimeData.forEach(d => {
-        d.Year = Number(d.DATE_OCC.substring(6, 10))
-        d.Month = Number(d.DATE_OCC.substring(0, 2))
-
-        if (d.Year == year && d.Month >= monthStart && d.Month <= monthEnd) {
-            console.log(d.Month);
-            //Hoping to make a processedData that would hold the data only from the timeframe
-        }
-    });
-
-    //Victim Age
-    const victAgeCounts = processedData.reduce((s, { Vict_Age }) => (s[Vict_Age] = (s[Vict_Age] || 0) + 1, s), {});
-    const victAgeData = Object.keys(victAgeCounts).map((key) => ({ Generation: key, count: victAgeCounts[key] }));
-    console.log("victAgeData", victAgeData);
-
-    const victAgeBarChart = d3.select("#barcharts")
-    .append("svg")
-    .attr("width", barChartWidth)
-    .attr("height", barChartHeight)
-    .style("user-select", "none");  
-
-    // X label
-    victAgeBarChart.append("text")
-        .attr("x", barChartWidth / 2)
-        .attr("y", barChartHeight + 55)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .text("Victim Age");
-
-
-    // Y label
-    victAgeBarChart.append("text")
-        .attr("x", -(barChartHeight / 2))
-        .attr("y", -40)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .text("Amount");
-
-    // X ticks
-    const x1 = d3.scaleBand()
-        .domain(victAgeData.map(d => d.Vict_Age))
-        .range([0, barChartWidth])
-        .paddingInner(0.3)
-        .paddingOuter(0.2);
-
-    const xAxisCall1 = d3.axisBottom(x1);
-    victAgeBarChart.append("g")
-        .attr("transform", `translate(0, ${barChartHeight})`)
-        .call(xAxisCall1)
-        .selectAll("text")
-            .attr("y", "10")
-            .attr("x", "-5")
-            .attr("text-anchor", "end")
-            .attr("transform", "rotate(-40)");
-
-    // Y ticks
-    const y1 = d3.scaleLinear()
-        .domain([0, d3.max(victAgeData, d => d.count)])
-        .range([barChartHeight, 0])
-        .nice();
-
-    const yAxisCall1 = d3.axisLeft(y1)
-                        .ticks(10);
-    victAgeBarChart.append("g").call(yAxisCall1);
-
-    //Bars
-    const victAgeBars = victSexBarChart.selectAll("rect").data(victSexData);
-
-    victAgeBars.enter().append("rect")
-        .attr("y", d => y1(d.count))
-        .attr("x", d => x1(d.Vict_Sex))
-        .attr("width", x1.bandwidth())
-        .attr("height", d => barChartHeight - y1(d.count))
-        .attr("fill", d => hexColor(d.length));
-
-
-    //Victim Sex
-    const victSexCounts = processedData.reduce((s, { Vict_Sex }) => (s[Vict_Sex] = (s[Vict_Sex] || 0) + 1, s), {});
-    const victSexData = Object.keys(victSexCounts).map((key) => ({ Generation: key, count: victSexCounts[key] }));
-    console.log("victSexData", victSexData);
-
-    const victSexBarChart = d3.select("#barcharts")
-    .append("svg")
-    .attr("width", barChartWidth)
-    .attr("height", barChartHeight)
-    .style("user-select", "none");  
-
-    // X label
-    victSexBarChart.append("text")
-        .attr("x", barChartWidth / 2)
-        .attr("y", barChartHeight + 55)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .text("Victim Sex");
-
-
-    // Y label
-    victSexBarChart.append("text")
-        .attr("x", -(barChartHeight / 2))
-        .attr("y", -40)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .text("Amount");
-
-    // X ticks
-    const x2 = d3.scaleBand()
-        .domain(victSexData.map(d => d.Vict_Sex))
-        .range([0, barChartWidth])
-        .paddingInner(0.3)
-        .paddingOuter(0.2);2
-
-    const xAxisCall2 = d3.axisBottom(x2);
-    barChart.append("g")
-        .attr("transform", `translate(0, ${barChartHeight})`)
-        .call(xAxisCall2)
-        .selectAll("text")
-            .attr("y", "10")
-            .attr("x", "-5")
-            .attr("text-anchor", "end")
-            .attr("transform", "rotate(-40)");
-
-    // Y ticks
-    const y2 = d3.scaleLinear()
-        .domain([0, d3.max(victSexData, d => d.count)])
-        .range([barChartHeight, 0])
-        .nice();
-
-    const yAxisCall2 = d3.axisLeft(y2)
-                        .ticks(10);
-    victSexBarChart.append("g").call(yAxisCall2);
-
-    //Bars
-    const victSexBars = victSexBarChart.selectAll("rect").data(victSexData);
-
-    victSexBars.enter().append("rect")
-        .attr("y", d => y2(d.count))
-        .attr("x", d => x2(d.Vict_Sex))
-        .attr("width", x2.bandwidth())
-        .attr("height", d => barChartHeight - y2(d.count))
-        .attr("fill", d => hexColor(d.length));
-
-        
-    //Location Type
-    const locationCounts = processedData.reduce((s, { Premis_Desc }) => (s[Premis_Desc] = (s[Premis_Desc] || 0) + 1, s), {});
-    const locationData = Object.keys(locationCounts).map((key) => ({ Generation: key, count: locationCounts[key] }));
-    console.log("locationData", locationData);
-
-
-    const locationBarChart = d3.select("#barcharts")
-    .append("svg")
-    .attr("width", barChartWidth)
-    .attr("height", barChartHeight)
-    .style("user-select", "none");  
-
-    // X label
-    locationBarChart.append("text")
-        .attr("x", barChartWidth / 2)
-        .attr("y", barChartHeight + 55)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .text("Victim Age");
-
-
-    // Y label
-    locationBarChart.append("text")
-        .attr("x", -(barChartHeight / 2))
-        .attr("y", -40)
-        .attr("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .text("Amount");
-
-    // X ticks
-    const x3 = d3.scaleBand()
-        .domain(primaryTypeData.map(d => d.Premis_Desc))
-        .range([0, barChartWidth])
-        .paddingInner(0.3)
-        .paddingOuter(0.2);
-
-    const xAxisCall3 = d3.axisBottom(x3);
-    locationBarChart.append("g")
-        .attr("transform", `translate(0, ${barChartHeight})`)
-        .call(xAxisCall3)
-        .selectAll("text")
-            .attr("y", "10")
-            .attr("x", "-5")
-            .attr("text-anchor", "end")
-            .attr("transform", "rotate(-40)");
-
-    // Y ticks
-    const y3 = d3.scaleLinear()
-        .domain([0, d3.max(locationData, d => d.count)])
-        .range([barChartHeight, 0])
-        .nice();
-
-    const yAxisCall3 = d3.axisLeft(y3)
-                        .ticks(10);
-    locationBarChart.append("g").call(yAxisCall3);
-
-    //Bars
-    const locationBars = locationBarChart.selectAll("rect").data(locationData);
-
-    locationBars.enter().append("rect")
-        .attr("y", d => y3(d.count))
-        .attr("x", d => x3(d.Premis_Desc))
-        .attr("width", x3.bandwidth())
-        .attr("height", d => barChartHeight - y3(d.count))
-        .attr("fill", d => hexColor(d.length));
 }
