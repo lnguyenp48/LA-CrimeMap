@@ -27,8 +27,6 @@ export async function drawTimeline(crimeData, onBrush) {
         crimeData.sort((a, b) => d3.ascending(a.parsedDateOcc, b.parsedDateOcc));
         const extent = d3.extent(crimeData, d => d.parsedDateOcc);
 
-        // console.log("Crime Data From Timeline", crimeData);
-
         timelineBrushDefault = [
             formatTimelineDate(crimeData[0].parsedDateOcc),
             formatTimelineDate(crimeData[crimeData.length - 1].parsedDateOcc)

@@ -1,4 +1,3 @@
-//rmbr to add getStartDate, getEndDate
 import { initMap } from './heatmap.js';
 import { loadCrimeData, filterCrimesByType, getLocationCounts, countCrimes } from './main.js';
 import { drawTimeline, timelineDispatcher} from './timeline.js'
@@ -13,6 +12,7 @@ const defaultBrushSelection = await drawTimeline(fullData);
 const defaultStartDate = defaultBrushSelection[0];
 const defaultEndDate = defaultBrushSelection[1];
 
+// This is where components of the dashboard are drawn (map, timeline, overview map, etc)
 async function createDashboard(selectedFilter = 'all', startDate = defaultStartDate, endDate = defaultEndDate) {
     
     const loading = document.getElementById("loading");
@@ -40,7 +40,7 @@ async function createDashboard(selectedFilter = 'all', startDate = defaultStartD
 
         filteredCrimeData = await loadCrimeData(filteredCrimeData);
         getLocationCounts(filteredCrimeData);
-        // console.log("Filtered crime data", filteredCrimeData);
+        
 
         // Clear map to avoid previous maps from showing under newly rendered maps when user filters for a specific crime type
         d3.select("#heatmap").selectAll("*").remove();

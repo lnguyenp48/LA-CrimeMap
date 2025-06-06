@@ -10,7 +10,7 @@
 import { countCrimes } from './main.js';
 import { drawBarChart } from './barCharts.js';
 
-
+// This function essentially draws the whole heat map (boundaries, color hexagons, etc.)
 export async function initMap(crimeData, fullData) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
@@ -104,6 +104,7 @@ export async function initMap(crimeData, fullData) {
             
             setupTooltip(resetDivisions, tooltip, districtCrimeCounts);
         }
+        // For when a user clicks into a district -> pan into district, update bar charts
         function clicked(event, d) { 
             const districtName = d.properties.APREC;
             if (districtName === "North Hollywood") {
@@ -135,6 +136,7 @@ export async function initMap(crimeData, fullData) {
                 console.error("Error in drawBarChart:", e);
               }
         }
+        // When a user zooms into the map
         function zoomed(event) { 
             const {transform} = event;
                 g.attr("transform", transform);
@@ -191,8 +193,6 @@ export async function initMap(crimeData, fullData) {
 // Helper functions
 function addCrimeHeatmap(container, crimeData, fullData, projection, radius = 8) {
     const hexPoints = crimeData.map(d => {
-        // console.log("Coords:", d.longitude, d.latitude);
-
         const coords = projection([+d.longitude, +d.latitude]);
         return coords && !isNaN(coords[0]) && !isNaN(coords[1]) ? coords : null;
     }).filter(Boolean);
@@ -222,6 +222,7 @@ function addCrimeHeatmap(container, crimeData, fullData, projection, radius = 8)
     
 }
 
+// draw boundaries of districts and map
 function drawBoundaries(container, geoData, projection, clicked) {
     const boundaryGroup = container.append("g")
         .attr("class", "district-boundary");
@@ -238,6 +239,7 @@ function drawBoundaries(container, geoData, projection, clicked) {
     return divisions;
 }
 
+//Draw the color scale legend for heat map
 function drawLegend() {
     const legendWidth = 300;
     const legendHeight = 50;
@@ -283,6 +285,7 @@ function drawLegend() {
         .style("font-weight", "bold");
 }
 
+// Render Tooltip
 function setupTooltip(divisions, tooltip, districtCrimeCounts) {
     const districtCrimeMap = {};
     districtCrimeCounts.forEach(d => {
@@ -441,8 +444,6 @@ function drawTimeline(crimeData) {
 }
 
 // return the start and end dates of range selected by user on timeline
-// return as a string in this format: "01/01/2022 12:00:00 AM" preferably as that is what the filter function in main.js is expecting
-// if returned in another format, please update the filter function in main.js too, ty
 
 export function getStartDate() {
     if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[0]);
