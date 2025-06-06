@@ -9,12 +9,13 @@
 import { countCrimes } from './main.js';
 
 
-export async function initMap(crimeData, fullData, countCrimes) {
+export async function initMap(crimeData, fullData) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
             d3.json("data/lapd_districts.geojson"),
+            countCrimes(crimeData)
         ]);
-        console.log("Crime Data From Heat", fullData);
+        console.log("Crime Data From Heat", districtCrimeCounts);
 
         // Create SVG container
         const svg2 = d3.select("#heatmap")
@@ -252,40 +253,6 @@ function addCrimeHeatmap(container, crimeData, fullData, projection, drawTimelin
 
 }
 
-function setupTooltip(divisions, tooltip, districtCrimeCounts) {
-    divisions
-        .style("cursor", "pointer")
-        .on("mouseover", function(event, d) {
-            const name = d.properties.APREC;
-            const total = districtCrimeCounts[name].count;
-
-            tooltip
-                .style("display", "block")
-                .style("background-color", "rgba(255, 255, 255, 0.9)")
-                .style("border", "1px solid black")
-                .style("border-radius", "7px")
-                .style("padding", "5px")
-                .style("color", "#403f3e")
-                .style("font-family", "sans-serif")
-                .style("font-size", "12px")
-                .html(`
-                    <div>
-                        <strong>${name}</strong>
-                        <p>Total Number of Crimes: ${total}</p>
-                    </div>
-                `);
-                
-                
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mouseout", function() {
-            tooltip.style("display", "none");
-        });
-}
-
 function drawBoundaries(container, geoData, projection, clicked) {
     const boundaryGroup = container.append("g")
         .attr("class", "district-boundary");
@@ -455,7 +422,41 @@ function drawTimeline(crimeData) {
         console.log("Brushed:", brushSelection);
     }
 }
+function setupTooltip(divisions, tooltip, districtCrimeCounts) {
+    const districtCrimeMap = {};
+    districtCrimeCounts.forEach(d => {
+        districtCrimeMap[d.area_name] = d;
+    });
+    divisions
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+            const name = d.properties.APREC;
+            const total = districtCrimeMap[name]?.count || 0;
 
+            tooltip
+                .style("display", "block")
+                .style("background-color", "rgba(255, 255, 255, 0.9)")
+                .style("border", "1px solid black")
+                .style("border-radius", "7px")
+                .style("padding", "5px")
+                .style("color", "#403f3e")
+                .style("font-family", "sans-serif")
+                .style("font-size", "12px")
+                .html(`
+                    <div>
+                        <strong>${name}</strong>
+                        <p>Total Number of Crimes: ${total}</p>
+                    </div>
+                `);       
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("display", "none");
+        });
+}
 // return the start and end dates of range selected by user on timeline
 // return as a string in this format: "01/01/2022 12:00:00 AM" preferably as that is what the filter function in main.js is expecting
 // if returned in another format, please update the filter function in main.js too, ty

@@ -78,42 +78,38 @@ export async function filterCrimesByType(type, startDate, endDate) {
         }
     });
 }
-
-export async function countCrimes(){
+export async function countCrimes(dataset) {
     try {
-        const rawData = await d3.csv("Crime_Data_from_2020_to_Present.csv");
-        
-        // Process raw data
-        const processedData = rawData.map(d => ({
-            Area: +d.AREA,
-            Area_Name: d["AREA NAME"],
-            // DATE_OCC: d["DATE OCC"], // figure out area counts first before doing the rest
-            // Vict_Age: +d["Vict Age"],
-            // Vict_Sex: d["Vict Sex"]
-        }));
+        if (!dataset) {
+            dataset = await d3.csv("Crime_Data_from_2020_to_Present.csv");
+            console.log("dataset", dataset);
+        }
 
         const areas = {};
-        processedData.forEach(d => {
-            if (d.Area_Name in areas) {
-                areas[d.Area_Name].count += 1;
+
+        dataset.forEach(d => {
+            const areaName = d.Area_Name?.toUpperCase();  // Normalize to uppercase
+            const areaCode = +d.Area;
+
+            if (!areaName) return;
+
+            if (areas[areaName]) {
+                areas[areaName].count += 1;
             } else {
-                const area = {
-                    area: d.Area,
-                    area_name: d.Area_Name,
+                areas[areaName] = {
+                    area: areaCode,
+                    area_name: areaName,
                     count: 1
-                }
-                areas[d.Area_Name] = area;
+                };
             }
         });
-        const areaCrimeCounts = [];
-        Object.keys(areas).forEach(d => { areaCrimeCounts.push(areas[d]); });
-        return areaCrimeCounts;
+
+        return Object.values(areas);
 
     } catch (error) {
         console.error("Error loading crime data:", error);
-        return []; // Return empty array if error occurs
+        return [];
     }
-
 }
 
 // export async function loadCrimeData() {
