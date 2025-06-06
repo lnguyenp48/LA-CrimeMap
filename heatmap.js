@@ -8,12 +8,14 @@
 **/
 import { countCrimes } from './main.js';
 
-export async function initMap(crimeData, fullData, countCrimes) {
+
+export async function initMap(crimeData, fullData) {
     try {
         const [geoData, districtCrimeCounts] = await Promise.all([
             d3.json("data/lapd_districts.geojson"),
+            countCrimes(crimeData)
         ]);
-        console.log("Crime Data From Heat", fullData);
+        console.log("Crime Data From Heat", districtCrimeCounts);
 
         // Create SVG container
         const svg2 = d3.select("#heatmap")
@@ -248,40 +250,6 @@ function addCrimeHeatmap(container, crimeData, fullData, projection, drawCircles
 
 }
 
-function setupTooltip(divisions, tooltip, districtCrimeCounts) {
-    divisions
-        .style("cursor", "pointer")
-        .on("mouseover", function(event, d) {
-            const name = d.properties.APREC;
-            const total = districtCrimeCounts[name].count;
-
-            tooltip
-                .style("display", "block")
-                .style("background-color", "rgba(255, 255, 255, 0.9)")
-                .style("border", "1px solid black")
-                .style("border-radius", "7px")
-                .style("padding", "5px")
-                .style("color", "#403f3e")
-                .style("font-family", "sans-serif")
-                .style("font-size", "12px")
-                .html(`
-                    <div>
-                        <strong>${name}</strong>
-                        <p>Total Number of Crimes: ${total}</p>
-                    </div>
-                `);
-                
-                
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY + 10) + "px");
-        })
-        .on("mouseout", function() {
-            tooltip.style("display", "none");
-        });
-}
-
 function drawBoundaries(container, geoData, projection, clicked) {
     const boundaryGroup = container.append("g")
         .attr("class", "district-boundary");
@@ -341,4 +309,140 @@ function drawLegend() {
         .text("Crime Count")
         .style("font-size", "12px")
         .style("font-weight", "bold");
+}
+
+// Global variables for getStartDate() and getEndDate()
+let timelineBrushSelection = null;
+let timelineBrushDefault = null;
+const formateTimelineDate = d3.timeFormat("%m/%d/%Y %I:%M:%S %p");
+
+function drawTimeline(crimeData) {
+    d3.select("#timeline").selectAll("svg").remove();
+
+    const timeline = document.querySelector("#timeline");
+    const timelineWidth = timeline.clientWidth;
+    const timelineHeight = timeline.clientHeight;
+
+    const svg = d3.select("#timeline")
+        .append("svg")
+        .attr("width", timelineWidth)
+        .attr("height", timelineHeight)
+        .style("user-select", "none");
+
+    // Parse DATE_OCC into readable dates
+    const parseDate = d3.timeParse("%m/%d/%Y %I:%M:%S %p");
+    crimeData.forEach(d => {
+        d.parsedDateOcc = parseDate(d["DATE OCC"]);
+    });
+
+    crimeData.sort((a, b) => d3.ascending(a.parsedDateOcc, b.parsedDateOcc));
+    const extent = d3.extent(crimeData, d => d.parsedDateOcc);
+
+    timelineBrushDefault = [
+        formateTimelineDate(crimeData[0].parsedDateOcc),
+        formateTimelineDate(crimeData[crimeData.length - 1].parsedDateOcc)
+    ];
+    console.log(timelineBrushDefault);
+
+    const xScale = d3.scaleTime()
+        .domain(extent)
+        .range([40, timelineWidth - 40]);
+
+    const yPos = timelineHeight / 4;
+
+    // Scale ticks on timeline for better viewing
+    function getExtendedTicks(scale, extent) {
+        const ticks = scale.ticks(8);
+        const lastTick = ticks[ticks.length - 1];
+        const maxDate = extent[1];
+
+        if ((maxDate - lastTick) / (maxDate - extent[0]) > 0.01) {
+            ticks.push(maxDate);
+        }
+        return ticks;
+    }
+
+    const xAxis = d3.axisBottom(xScale)
+        .tickValues(getExtendedTicks(xScale, extent))
+        .tickFormat(d3.timeFormat("%b %d, %Y"));
+    
+    const xAxisGroup = svg.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0, ${yPos + 30})`)
+        .call(xAxis);
+
+    // Bounding box for zooming on timeline
+    const zoomRect = svg.append("rect")
+        .attr("class", "zoom-region")
+        .attr("x", 0)
+        .attr("y", timelineHeight / 2)
+        .attr("width", timelineWidth)
+        .attr("height", timelineHeight / 2)
+        .attr("fill", "transparent")
+        .style("cursor", "grab")
+        .call(d3.zoom()
+            .filter(event => event.type === "wheel")
+            .scaleExtent([1, 100])
+            .translateExtent([[0, 0], [timelineWidth, timelineHeight]])
+            .extent([[0, 0], [timelineWidth, timelineHeight]])
+            .on("zoom", zoomed)
+        )
+        .raise();
+    
+    const brush = d3.brushX()
+        .extent([[40, 0], [timelineWidth - 40, timelineHeight / 2]])
+        .on("end", brushed);
+
+    const brushGroup = svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    let currentXScale = xScale;
+
+    function zoomed(event) {
+        currentXScale = event.transform.rescaleX(xScale);
+        const newExtent = currentXScale.domain();
+
+        const dynamicAxis = d3.axisBottom(currentXScale)
+            .tickValues(getExtendedTicks(currentXScale, newExtent))
+            .tickFormat(d3.timeFormat("%b %d, %Y"));
+
+        xAxisGroup.call(dynamicAxis);
+
+        if (timelineBrushSelection) {
+            const [start, end] = timelineBrushSelection;
+            brushGroup.call(brush.move, [currentXScale(start), currentXScale(end)]);
+        }
+    }
+
+    function brushed(event) {
+        if (!event.selection) {
+            timelineBrushSelection = null;
+            return;
+        }
+
+        const [x0, x1] = event.selection;
+        const start = currentXScale.invert(x0);
+        const end = currentXScale.invert(x1);
+        timelineBrushSelection = [start, end];
+
+        getStartDate();
+        getEndDate();
+    }
+}
+
+// return the start and end dates of range selected by user on timeline
+// return as a string in this format: "01/01/2022 12:00:00 AM" preferably as that is what the filter function in main.js is expecting
+// if returned in another format, please update the filter function in main.js too, ty
+
+export function getStartDate() {
+    if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[0]);
+    if (timelineBrushDefault) return timelineBrushDefault[0];
+    return "01/01/2022 12:00:00 AM"; // This is the first entry in the dataset. Needed to return something for index.js
+}
+
+export function getEndDate() {
+    if (timelineBrushSelection) return formateTimelineDate(timelineBrushSelection[1]);
+    if (timelineBrushDefault) return timelineBrushDefault[1];
+    return "12/29/2024 12:00:00 AM"; // This is the last entry in the dataset. Needed to return something for index.js
 }
